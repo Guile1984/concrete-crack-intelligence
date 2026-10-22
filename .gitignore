@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Dados e artefatos pesados: fora do Git por decisão do Discovery
+data/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Máquina local
+.vscode/
+.env
+.DS_Store
+Thumbs.db

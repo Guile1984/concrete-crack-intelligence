@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "concrete-crack-intelligence"
+version = "0.1.0"
+description = "Segmentação de fissuras em concreto: baseline clássico contra rede neural, com rigor experimental."
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "scikit-image>=0.24",
+    "pillow>=10.4",
+    "matplotlib>=3.9",
+    "pandas>=2.2",
+]
+
+[project.optional-dependencies]
+dl = [
+    "torch>=2.5",
+    "torchvision>=0.20",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "pre-commit>=3.8",
+    "nbstripout>=0.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/concrete_crack"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "D", "ANN"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "ANN"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "data: depende dos dados reais; roda só localmente",
+    "torch: adaptador que exige PyTorch",
+]
