@@ -29,7 +29,7 @@ class RegrasPreRegistradas:
     proporcao_validacao: float = 0.15
     proporcao_teste: float = 0.15
     seed_split: int = 20261022
-    max_experimentos_adicionais: int = 3
+    max_experimentos_adicionais: int = 4
     n_seeds_por_configuracao: int = 3
     teto_custo_usd: float = 20.0
     metrica_decisao: str = "cldice"
