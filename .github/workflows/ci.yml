@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: core (lint e testes sem torch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Instalar o pacote sem torch
+        run: python -m pip install -e ".[dev]"
+      - name: Lint e formato (os mesmos hooks do commit)
+        run: pre-commit run --all-files --show-diff-on-failure
+      - name: Testes sem torch
+        run: pytest
+
+  dl:
+    name: dl (adaptadores com torch em CPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Instalar PyTorch para CPU, versão do Colab
+        run: python -m pip install "torch==2.11.*" torchvision --index-url https://download.pytorch.org/whl/cpu
+      - name: Instalar o pacote
+        run: python -m pip install -e ".[dev]"
+      - name: Testes com torch
+        run: pytest -m torch
