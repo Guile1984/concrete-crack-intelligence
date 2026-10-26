@@ -38,8 +38,10 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `3c0efd7` | Fundação: ambiente, pacote em camadas, pre-commit | Todos os hooks passaram |
 | `fd7aee8` | Teste de arquitetura com 16 casos do analisador | 23 testes; falha provocada (`import torch` no `domain`) detectada |
 | `77a65d4` | Regras pré-registradas travadas por teste (A13) | 33 testes; falha provocada (`4 == 3`) detectada |
-| (entre `77a65d4` e `2ef9a90`) | Marcadores `torch` e `data` fora do pytest padrão (A18) | 33 passed, 1 deselected |
+| d9f6634| Marcadorestorchedata fora do pytest padrão (A18) | 33 passed, 1 deselected |
 | `2ef9a90` | CI com as jobs `core` e `dl` | Duas jobs verdes na `main` (51 s) |
+| 74a983f | LICENSE MIT (A20) | Detectada pelo GitHub |
+| fd2eebd| README inicial e NOTES.md (decisões A1 a A20) | Duas jobs verdes na main |
 | `5730f0f` | Falha proposital, só no PR #1 (não mesclado) | Ver seção 3 |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
@@ -114,3 +116,25 @@ Python 3.12.15 (local); pre-commit 4.7.0; hooks: `pre-commit-hooks v6.0.0`,
 `ruff-pre-commit v0.17.1`, `nbstripout 0.9.1`; ações do CI: `checkout@v7`,
 `setup-python@v7`; CI: `torch==2.11.*` para CPU. Runtime do Colab de julho/2026 (fonte
 externa): Python 3.12.13, PyTorch 2.11.0, NumPy 2.0.2.
+
+## 8. Fechamento da Sprint 0 (2026-10-26)
+
+**Gates:** CI verde nas duas jobs (`2ef9a90`, `fd2eebd`); teste de arquitetura falhando de
+propósito (`import torch` no `domain`); regras pré-registradas travadas, com falha provocada
+(`4 == 3`); CI falhando de propósito num PR. Suíte: 33 testes passando e 1 de ambiente (torch),
+Ruff limpo, pre-commit protegendo cada commit.
+
+**Lições aprendidas**
+
+1. Todo guarda-corpo foi provado falhando de propósito antes de ser aceito. Um teste que
+   nunca viu falhar não prova nada; repetir o método nas próximas sprints.
+2. Hook que corrige arquivo faz o primeiro commit falhar uma vez (fim de linha CRLF, formatação).
+   É esperado: `git add` de novo e `git commit` de novo. Opcional no editor: `files.eol` = `\n`.
+3. Sessão elevada contamina o cache do pre-commit (seção 4). Regra A12.
+4. Falhas provocadas vão numa branch com PR, nunca na `main` pública.
+5. Verificar a contagem antes de explicar: o `ruff format --check .` contou 10 arquivos
+   (8 de Python e 2 Markdown), e uma primeira explicação diferente estava errada.
+6. O plano mudou duas vezes (A10 e A15) sem afetar nenhum gate.
+
+**Divergências corrigidas durante a sprint:** nome de teste com erro de grafia
+(`clcdice`, corrigido para `cldice`); contagem de arquivos do Ruff (item 5 acima).
