@@ -47,7 +47,7 @@ convention = "google"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers -m 'not torch and not data'"
+addopts = "-ra --strict-markers -m 'not torch and not data' --basetemp=.pytest_tmp"
 markers = [
     "data: depende dos dados reais; roda só localmente",
     "torch: adaptador que exige PyTorch",
