@@ -30,19 +30,23 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A18 | 2026-10-26 | O `pytest` padrão exclui os marcadores `torch` e `data` (`addopts`) | Lição 0.9 |
 | A19 | 2026-10-26 | A job `dl` usa `torch==2.11.*`, a versão do Colab de julho/2026 | Lição 0.9 |
 | A20 | 2026-10-26 | Licença MIT para o código | Decisão do Gui |
+| A21 | 2026-10-27 | O projeto não usa o split publicado do S2DS (seção 9) | Lição 1.1 |
+| A22 | 2026-10-27 | Divergência de licença do S2DS: vale o mais restritivo | Lição 1.1 |
+| A23 | 2026-10-27 | Aquisição semiautomática: download manual e script que registra e verifica o hash | Lição 1.1 |
 
-## 2. Commits e verificações da Sprint 0
+## 2. Commits e verificações
 
 | Commit | O que | Verificação |
 |---|---|---|
 | `3c0efd7` | Fundação: ambiente, pacote em camadas, pre-commit | Todos os hooks passaram |
 | `fd7aee8` | Teste de arquitetura com 16 casos do analisador | 23 testes; falha provocada (`import torch` no `domain`) detectada |
 | `77a65d4` | Regras pré-registradas travadas por teste (A13) | 33 testes; falha provocada (`4 == 3`) detectada |
-| d9f6634| Marcadorestorchedata fora do pytest padrão (A18) | 33 passed, 1 deselected |
+| `d9f6634` | Marcadores `torch` e `data` fora do pytest padrão (A18) | 33 passed, 1 deselected |
 | `2ef9a90` | CI com as jobs `core` e `dl` | Duas jobs verdes na `main` (51 s) |
-| 74a983f | LICENSE MIT (A20) | Detectada pelo GitHub |
-| fd2eebd| README inicial e NOTES.md (decisões A1 a A20) | Duas jobs verdes na main |
 | `5730f0f` | Falha proposital, só no PR #1 (não mesclado) | Ver seção 3 |
+| `74a983f` | LICENSE MIT (A20) | Detectada pelo GitHub |
+| `fd2eebd` | README inicial e NOTES.md (decisões A1 a A20) | Duas jobs verdes na `main` |
+| `8aa3898` | Fechamento da Sprint 0 no NOTES.md | Árvore limpa, em dia com `origin/main` |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -53,7 +57,9 @@ de estilo. O PR foi fechado sem mesclar e a branch foi apagada. A execução fic
 no histórico do Actions como prova de que o CI rejeita uma violação de regra
 pré-registrada.
 
-## 4. Incidente do cache do pre-commit
+## 4. Incidente de permissões (cache do pre-commit e pasta temporária do pytest)
+
+### Primeira manifestação: cache do pre-commit
 
 **Fatos observados**
 
@@ -74,24 +80,46 @@ pré-registrada.
 As duas pastas foram criadas numa sessão elevada e ficaram inacessíveis à sessão comum.
 O mecanismo exato das permissões não foi inspecionado.
 
-**Pendências deste incidente**
+### Segunda manifestação (2026-10-27): pasta temporária do pytest
+
+**Fatos observados**
+
+- O `pytest` terminou com `PermissionError` (WinError 5) em `pytest-current`, no `%TEMP%`,
+  **depois** de os testes passarem: o erro está na limpeza final, que percorre links
+  simbólicos. Os 16 testes de `test_procedencia.py` passaram, inclusive o que usa `tmp_path`.
+- As entradas `pytest-275` a `277` e o link `pytest-current` são de 16/10/2026 (12:34 a
+  12:39) e têm dono ilegível; as pastas criadas em 27/10 têm dono normal. O
+  `pytest-current` é um ponto de reanálise (`Directory, ReparsePoint`) cujo tipo e destino
+  o PowerShell não consegue ler.
+- Contorno: `TEMP` e `TMP` apontando para `C:\pytest-tmp` no terminal. Com isso, 49 passed.
+
+**Hipótese do autor, compatível com a evidência e não inspecionada**
+
+Execuções do pytest num PowerShell elevado, em outro projeto, no período em que o Claude
+Code foi usado nessa condição.
+
+### Pendências deste incidente
 
 - Reproduzir a criação das pastas num diretório descartável, comparando uma sessão comum
   com uma elevada.
-- Limpar as duas pastas antigas de um terminal elevado, depois de decidir se a evidência
-  deve ser guardada.
+- Limpar as pastas antigas (duas no cache do pre-commit; as de 16/10 no `%TEMP%`) de um
+  terminal elevado, depois de decidir se a evidência deve ser guardada.
+- Vigiar o `C:\pc-cache` (`dir /q`): como a variável vale para o usuário, uma sessão
+  elevada também escreveria ali. Previsão ainda não observada.
 
 ## 5. Pendências abertas
 
 - [ ] Sprint 1, antes de olhar as máscaras: fixar o limiar numérico de "máscaras inadequadas"
 - [ ] Sprint 1: escolher o método de detecção de quase duplicatas, depois de ver os dados
 - [ ] Sprint 1: ler e aceitar os termos de uso do S2DS antes do download
+- [ ] Sprint 1: avaliar a cópia do S2DS no Drive privado, para o Colab, contra o termo que proíbe distribuir
 - [ ] Sprint 1, condicional: confirmar licença e download parcial do CiF
 - [ ] Sprint 2: decidir onde mora o ajuste do Frangi (recomendação: serviço próprio de busca em grade)
 - [ ] Sprint 3: a sonda escolhe L4 ou T4 e confirma a runtime ativa do Colab
 - [ ] Sprint 7: decidir se os checkpoints serão publicados
 - [ ] Sprint 7: avaliar fixar as ações do CI por hash de commit e congelar um `pip freeze`
 - [ ] Conferir se o `ruff` instalado pelo pip está na mesma versão do hook; a autoridade é o hook (A17)
+- [ ] Decidir uma correção duradoura para a pasta temporária do pytest (proposta: `--basetemp` dentro do projeto)
 
 ## 6. Limitações conhecidas
 
@@ -106,13 +134,16 @@ O mecanismo exato das permissões não foi inspecionado.
   são fixadas por versão maior (`@v7`).
 - **Ruff:** garante que as anotações de tipo existem, não que estão corretas. O mypy não
   foi adicionado.
+- **Ficha de procedência:** o código valida o formato dos campos, não a verdade do que
+  está escrito; a verdade depende de uma leitura humana da fonte, por isso a ficha tem
+  data de consulta. O teste do manifesto roda no CI porque não depende de dados.
 - **Reprodutibilidade em GPU:** o determinismo total não é garantido (R9) e é medido
   pelas três seeds.
 - **Privacidade:** o e-mail do autor está visível nos commits públicos.
 
 ## 7. Versões observadas
 
-Python 3.12.15 (local); pre-commit 4.7.0; hooks: `pre-commit-hooks v6.0.0`,
+Python 3.12.15 (local); pytest 9.1.1; pre-commit 4.7.0; hooks: `pre-commit-hooks v6.0.0`,
 `ruff-pre-commit v0.17.1`, `nbstripout 0.9.1`; ações do CI: `checkout@v7`,
 `setup-python@v7`; CI: `torch==2.11.*` para CPU. Runtime do Colab de julho/2026 (fonte
 externa): Python 3.12.13, PyTorch 2.11.0, NumPy 2.0.2.
@@ -138,3 +169,36 @@ Ruff limpo, pre-commit protegendo cada commit.
 
 **Divergências corrigidas durante a sprint:** nome de teste com erro de grafia
 (`clcdice`, corrigido para `cldice`); contagem de arquivos do Ruff (item 5 acima).
+
+## 9. Sprint 1: Dados (em andamento)
+
+**Fontes consultadas em 2026-10-27**
+
+- CCSD: Mendeley Data v1, 3/abr/2019, DOI 10.17632/jwsn7tfbrp.1, CC BY 4.0; 458 imagens com
+  mapas alfa binários, edifícios da METU. A lista de arquivos não aparece na página; nomes
+  e tamanhos serão lidos após o download.
+- S2DS: repositório sem versão nem release; download por link do Google Drive; os termos do
+  README restringem a uso acadêmico e proíbem distribuir.
+
+**Decisões e achados**
+
+- **A21:** o projeto não usa o split publicado do S2DS. Ele é manual, e o teste só tem
+  imagens com chance razoável de reconhecimento (imagens quase invisíveis ou de qualidade
+  ruim foram para treino e validação). As 743 imagens formam o teste externo, como no
+  Discovery. Os números não são comparáveis aos de trabalhos que usam o split publicado.
+- **A22:** divergência de licença do S2DS (README: uso acadêmico; página: GPL-3.0): vale o
+  mais restritivo.
+- **A23:** aquisição semiautomática: download manual e script que registra e verifica o hash
+  (SHA-256). Download automático só se houver URL estável verificada.
+
+**A medir:** 232 das 743 imagens do S2DS contêm fissura (180 + 25 + 27, pela tabela do
+README) e a fissura soma ~0,10% dos pixels pela mesma tabela, contra 0,26% citado no
+Discovery a partir de outra fonte.
+
+**Lição 1.1 (em andamento):** ficha de procedência (`FonteDados`), manifesto
+`manifests/fontes.json` e 16 testes novos; suíte em 49 passed, 1 deselected.
+
+**Divergências corrigidas na lição 1.1:** uma linha da ficha de procedência tinha 89
+caracteres (limite 88, regra E501), corrigida quebrando a chamada; a previsão de qual teste
+falharia por causa do `tmp_path` estava errada (os 16 passaram; a falha estava na limpeza
+final do pytest, seção 4).
