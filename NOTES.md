@@ -34,6 +34,8 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A22 | 2026-10-27 | Divergência de licença do S2DS: vale o mais restritivo | Lição 1.1 |
 | A23 | 2026-10-27 | Aquisição semiautomática: download manual e script que registra e verifica o hash | Lição 1.1 |
 | A24 | 2026-10-27 | O pytest usa `--basetemp=.pytest_tmp` (pasta do projeto, ignorada pelo Git) em vez do `%TEMP%` compartilhado | Incidente de permissões (seção 4) |
+| A25 | 2026-10-27 | Reenumeração da Sprint 1: a aquisição se divide em 1.2 (modelo do registro e comparação), 1.3 (hash em disco e manifesto em JSON) e 1.4 (aquisição do CCSD); as demais lições avançam | Lição 1.2 |
+| A26 | 2026-10-27 | O registro de arquivos usa SHA-256 e caminhos relativos à pasta da fonte, sempre com `/` (sem `.`, `..`, `:` nem barra invertida); a comparação distingue ausente, inesperado e alterado | Lição 1.2 |
 
 ## 2. Commits e verificações
 
@@ -50,6 +52,9 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `8aa3898` | Fechamento da Sprint 0 no NOTES.md | Árvore limpa, em dia com `origin/main` |
 | `6f833c5` | Ficha de procedência e manifesto de fontes (CCSD e S2DS) | 49 passed; trava de licença do S2DS vista falhando (`assert True is False`) e desfeita |
 | `ee6c985` | Sprint 1 aberta no NOTES.md (A21 a A23) | Duas jobs verdes na `main` |
+| `8a6beb4` | Pytest usa pasta temporária do projeto (A24) | 49 passed no terminal novo, sem traceback; CI verde |
+| `6c48d4b` | A24 e lição 1.1 concluída no NOTES.md | Duas jobs verdes na `main` |
+| `edddc64` | Registro de arquivos e comparação de integridade (lição 1.2) | 76 passed; trava do caminho `.` vista falhando (`DID NOT RAISE`) e desfeita |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -155,6 +160,7 @@ reaparecer, registrar aqui.
 - **Reprodutibilidade em GPU:** o determinismo total não é garantido (R9) e é medido
   pelas três seeds.
 - **Privacidade:** o e-mail do autor está visível nos commits públicos.
+- **Registro de arquivos:** o hash é registrado no primeiro download (confiança no primeiro uso): protege contra mudança posterior, mas não prova que o arquivo é o publicado pelo autor, porque o Mendeley não fornece hash para comparação. A comparação do domínio não toca em disco; calcular o hash e ler a pasta é da lição 1.3.
 
 ## 7. Versões observadas
 
@@ -219,6 +225,10 @@ jobs em `ee6c985`.
 caracteres (limite 88, regra E501), corrigida quebrando a chamada; a previsão de qual teste
 falharia por causa do `tmp_path` estava errada (os 16 passaram; a falha estava na limpeza
 final do pytest, seção 4).
+
+**Lição 1.2 (concluída):** modelo do registro de arquivos (`ArquivoRegistrado`, `ManifestoArquivos`) e comparação (`comparar`) em `domain/integridade.py`, com 27 testes novos; suíte em 76 passed, 1 deselected. A trava do caminho `.` foi vista falhando (`DID NOT RAISE ValueError` em `test_caminho_invalido_e_recusado[./a.jpg]`) e desfeita.
+
+**Divergências corrigidas na lição 1.2:** o `ruff format` reorganizou a lista do `parametrize` (quebra manual de linha), sem mudança de comportamento.
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
