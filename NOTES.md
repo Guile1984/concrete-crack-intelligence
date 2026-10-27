@@ -20,8 +20,8 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A8 | 2026-10-21 | Testes isentos de docstring e anotação (regras `D` e `ANN` do Ruff) | Lição 0.3 |
 | A9 | 2026-10-21 | `config` e `domain` não importam nada do projeto; `presentation` é a raiz de composição | Lição 0.4 |
 | A10 | 2026-10-21 | `.gitignore` e `.gitattributes` antecipados da lição 0.9 para a 0.5 | Lição 0.5 |
-| A11 | 2026-10-21 | `PRE_COMMIT_HOME=C:\pc-cache`, permanente | Incidente do cache (seção 4) |
-| A12 | 2026-10-21 | Claude Code, `pre-commit` e `git commit` só em terminal comum (não elevado) | Incidente do cache (seção 4) |
+| A11 | 2026-10-21 | `PRE_COMMIT_HOME=C:\pc-cache`, permanente | Incidente de permissões (seção 4) |
+| A12 | 2026-10-21 | Claude Code, `pre-commit`, `pytest` e `git commit` só em terminal comum (não elevado) | Incidente de permissões (seção 4) |
 | A13 | 2026-10-22 | Seed do split = 20261022 | Lição 0.7 |
 | A14 | 2026-10-22 | Repositório remoto criado antes do CI, que só roda no GitHub | Mudança de ordem |
 | A15 | 2026-10-26 | Numeração: 0.8 repositório remoto, 0.9 CI, 0.10 documentos de raiz | Divisão de lição |
@@ -33,6 +33,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A21 | 2026-10-27 | O projeto não usa o split publicado do S2DS (seção 9) | Lição 1.1 |
 | A22 | 2026-10-27 | Divergência de licença do S2DS: vale o mais restritivo | Lição 1.1 |
 | A23 | 2026-10-27 | Aquisição semiautomática: download manual e script que registra e verifica o hash | Lição 1.1 |
+| A24 | 2026-10-27 | O pytest usa `--basetemp=.pytest_tmp` (pasta do projeto, ignorada pelo Git) em vez do `%TEMP%` compartilhado | Incidente de permissões (seção 4) |
 
 ## 2. Commits e verificações
 
@@ -47,6 +48,8 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `74a983f` | LICENSE MIT (A20) | Detectada pelo GitHub |
 | `fd2eebd` | README inicial e NOTES.md (decisões A1 a A20) | Duas jobs verdes na `main` |
 | `8aa3898` | Fechamento da Sprint 0 no NOTES.md | Árvore limpa, em dia com `origin/main` |
+| `6f833c5` | Ficha de procedência e manifesto de fontes (CCSD e S2DS) | 49 passed; trava de licença do S2DS vista falhando (`assert True is False`) e desfeita |
+| `ee6c985` | Sprint 1 aberta no NOTES.md (A21 a A23) | Duas jobs verdes na `main` |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -91,12 +94,20 @@ O mecanismo exato das permissões não foi inspecionado.
   12:39) e têm dono ilegível; as pastas criadas em 27/10 têm dono normal. O
   `pytest-current` é um ponto de reanálise (`Directory, ReparsePoint`) cujo tipo e destino
   o PowerShell não consegue ler.
-- Contorno: `TEMP` e `TMP` apontando para `C:\pytest-tmp` no terminal. Com isso, 49 passed.
+- Contorno provisório: `TEMP` e `TMP` apontando para `C:\pytest-tmp` no terminal. Com isso,
+  49 passed.
 
 **Hipótese do autor, compatível com a evidência e não inspecionada**
 
 Execuções do pytest num PowerShell elevado, em outro projeto, no período em que o Claude
 Code foi usado nessa condição.
+
+**Correção duradoura (A24)**
+
+`--basetemp=.pytest_tmp` no `addopts` e `.pytest_tmp/` no `.gitignore`. Verificada num
+terminal novo, com o `%TEMP%` original: 49 passed, 1 deselected, resumo normal e sem
+traceback. É **uma** execução; a eficácia duradoura se confirma com o uso. Se o erro
+reaparecer, registrar aqui.
 
 ### Pendências deste incidente
 
@@ -119,7 +130,7 @@ Code foi usado nessa condição.
 - [ ] Sprint 7: decidir se os checkpoints serão publicados
 - [ ] Sprint 7: avaliar fixar as ações do CI por hash de commit e congelar um `pip freeze`
 - [ ] Conferir se o `ruff` instalado pelo pip está na mesma versão do hook; a autoridade é o hook (A17)
-- [ ] Decidir uma correção duradoura para a pasta temporária do pytest (proposta: `--basetemp` dentro do projeto)
+- [x] Correção duradoura para a pasta temporária do pytest (A24)
 
 ## 6. Limitações conhecidas
 
@@ -137,6 +148,10 @@ Code foi usado nessa condição.
 - **Ficha de procedência:** o código valida o formato dos campos, não a verdade do que
   está escrito; a verdade depende de uma leitura humana da fonte, por isso a ficha tem
   data de consulta. O teste do manifesto roda no CI porque não depende de dados.
+- **Pasta temporária do pytest:** com `--basetemp`, o pytest apaga e recria `.pytest_tmp`
+  a cada execução, o que não permite rodar testes em paralelo; o caminho é relativo à
+  pasta de onde o `pytest` é chamado (convenção: a raiz do projeto, como no CI). Uma
+  sessão elevada que rode o pytest neste projeto pode deixar a pasta presa.
 - **Reprodutibilidade em GPU:** o determinismo total não é garantido (R9) e é medido
   pelas três seeds.
 - **Privacidade:** o e-mail do autor está visível nos commits públicos.
@@ -195,10 +210,15 @@ Ruff limpo, pre-commit protegendo cada commit.
 README) e a fissura soma ~0,10% dos pixels pela mesma tabela, contra 0,26% citado no
 Discovery a partir de outra fonte.
 
-**Lição 1.1 (em andamento):** ficha de procedência (`FonteDados`), manifesto
-`manifests/fontes.json` e 16 testes novos; suíte em 49 passed, 1 deselected.
+**Lição 1.1 (concluída):** ficha de procedência (`FonteDados`), manifesto
+`manifests/fontes.json` e 16 testes novos; suíte em 49 passed, 1 deselected. A trava de
+licença do S2DS foi vista falhando (`assert True is False`) e desfeita. CI verde nas duas
+jobs em `ee6c985`.
 
 **Divergências corrigidas na lição 1.1:** uma linha da ficha de procedência tinha 89
 caracteres (limite 88, regra E501), corrigida quebrando a chamada; a previsão de qual teste
 falharia por causa do `tmp_path` estava errada (os 16 passaram; a falha estava na limpeza
 final do pytest, seção 4).
+
+**Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
+usar `git --no-pager log --oneline -n 5`.
