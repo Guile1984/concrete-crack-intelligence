@@ -1,0 +1,52 @@
+{
+  "fontes": [
+    {
+      "id": "ccsd",
+      "nome": "Concrete Crack Segmentation Dataset",
+      "versao": "v1",
+      "papel": "primario",
+      "autores": ["Çağlar Fırat Özgenel"],
+      "publicacao": "Özgenel, Ç. F. (2019). Concrete Crack Segmentation Dataset. Mendeley Data, V1.",
+      "url": "https://data.mendeley.com/datasets/jwsn7tfbrp/1",
+      "doi": "10.17632/jwsn7tfbrp.1",
+      "licenca": "CC BY 4.0",
+      "licenca_permite_redistribuir": true,
+      "exige_aceite_termos": false,
+      "data_consulta": "2026-10-27",
+      "finalidade_original": "Segmentação semântica binária (fissura e fundo) de superfícies de concreto de edifícios do campus da Middle East Technical University.",
+      "n_imagens": 458,
+      "resolucao": "a medir",
+      "anotacoes": "Mapas alfa em preto e branco indicando a presença de fissura; estrutura exata a verificar na lição 1.4.",
+      "observacoes": [
+        "A lista de arquivos não aparece na página consultada; nomes e tamanhos serão lidos após o download.",
+        "O dataset de classificação (DOI 10.17632/5y9wdsg2zt) é derivado deste e está excluído do projeto: seus patches não identificam a imagem-mãe."
+      ],
+      "transformacoes_do_projeto": []
+    },
+    {
+      "id": "s2ds",
+      "nome": "Structural Defects Dataset (S2DS)",
+      "versao": "nao declarada",
+      "papel": "externo",
+      "autores": ["Christian Benz", "Volker Rodehorst"],
+      "publicacao": "Benz, C. e Rodehorst, V. (2022). Image-based detection of structural defects using hierarchical multi-scale attention. DAGM German Conference on Pattern Recognition, pp. 337-353. Springer.",
+      "url": "https://github.com/ben-z-original/s2ds",
+      "doi": null,
+      "licenca": "Termos do README: uso acadêmico gratuito; uso comercial e distribuição proibidos. A página do repositório também exibe GPL-3.0.",
+      "licenca_permite_redistribuir": false,
+      "exige_aceite_termos": true,
+      "data_consulta": "2026-10-27",
+      "finalidade_original": "Detecção de defeitos estruturais (fissura, desplacamento, corrosão, eflorescência, vegetação e ponto de controle) em imagens de superfícies majoritariamente de concreto.",
+      "n_imagens": 743,
+      "resolucao": "1024x1024 (cada imagem é um recorte de uma foto maior)",
+      "anotacoes": "Segmentação semântica de 7 classes: background, crack, spalling, corrosion, efflorescence, vegetation, control point.",
+      "observacoes": [
+        "Divergência de licença: o README restringe a uso acadêmico e proíbe distribuir; a página do GitHub exibe GPL-3.0. O projeto adota o mais restritivo.",
+        "O split publicado é manual: imagens de qualidade muito ruim ou com defeitos quase invisíveis foram para treino e validação, e o teste só tem imagens com chance razoável de reconhecimento. O projeto não usa o split publicado.",
+        "Pela tabela do README, 232 das 743 imagens contêm fissura (180 + 25 + 27) e a fissura soma cerca de 0,8 M de ~779 M de pixels (~0,10%); o Discovery citou 0,26% a partir de outra fonte. Medir.",
+        "A foto-mãe de cada recorte não é informada."
+      ],
+      "transformacoes_do_projeto": []
+    }
+  ]
+}
