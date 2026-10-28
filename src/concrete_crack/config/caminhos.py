@@ -39,3 +39,16 @@ def caminho_manifesto_arquivos(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``manifests/arquivos_<fonte_id>.json``.
     """
     return raiz / "manifests" / f"arquivos_{fonte_id}.json"
+
+
+def caminho_amostra_inspecao(raiz: Path, fonte_id: str) -> Path:
+    """Devolve o caminho da amostra sorteada para a inspeção das máscaras.
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte (por exemplo ccsd).
+
+    Returns:
+        O caminho de ``manifests/inspecao_<fonte_id>.json``.
+    """
+    return raiz / "manifests" / f"inspecao_{fonte_id}.json"
