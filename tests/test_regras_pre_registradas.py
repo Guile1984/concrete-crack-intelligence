@@ -51,3 +51,18 @@ def test_regras_sao_imutaveis() -> None:
 def test_proporcoes_que_nao_somam_um_sao_recusadas() -> None:
     with pytest.raises(ValueError, match="somam"):
         replace(REGRAS, proporcao_teste=0.20)
+
+
+def test_inspecao_de_40_mascaras_com_seed_fixa() -> None:
+    assert REGRAS.n_inspecao_mascaras == 40
+    assert REGRAS.seed_inspecao_mascaras == 20261022
+
+
+def test_mascaras_reprovadas_com_oito_ou_mais_inadequadas() -> None:
+    assert REGRAS.limiar_reprovacao_mascaras == 8
+    assert REGRAS.proporcao_relevante_mascaras == 0.25
+
+
+def test_limiar_maior_que_a_amostra_e_recusado() -> None:
+    with pytest.raises(ValueError, match="limiar"):
+        replace(REGRAS, limiar_reprovacao_mascaras=41)
