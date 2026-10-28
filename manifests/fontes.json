@@ -16,9 +16,10 @@
       "finalidade_original": "Segmentação semântica binária (fissura e fundo) de superfícies de concreto de edifícios do campus da Middle East Technical University.",
       "n_imagens": 458,
       "resolucao": "a medir",
-      "anotacoes": "Mapas alfa em preto e branco indicando a presença de fissura; estrutura exata a verificar na lição 1.4.",
+      "anotacoes": "Duas pastas, BW (máscaras) e rgb (fotos), com 458 arquivos cada, todos em JPEG. Máscaras em JPEG têm perdas, então a binarização por limiar será uma decisão registrada (lição 1.6). Mapas alfa em preto e branco, segundo a página.",
       "observacoes": [
-        "A lista de arquivos não aparece na página consultada; nomes e tamanhos serão lidos após o download.",
+        "A página lista um único arquivo, concreteCrackSegmentationDataset.rar (711 MB). O botão Download All (681 MB) entrega um zip cujo RAR interno está truncado: 714.931.556 bytes contra 745.914.150 no download direto, com 446 fotos contra 458 e erro de soma de verificação em rgb/593.JPG. O projeto usa o RAR baixado direto pelo ícone ao lado do arquivo; o hash dele está em manifests/arquivos_ccsd.json.",
+        "Os nomes diferem entre as pastas (BW/001.jpg e rgb/610.JPG) e a numeração tem lacunas: o pareamento compara o nome sem extensão, ignorando maiúsculas (lição 1.6).",
         "O dataset de classificação (DOI 10.17632/5y9wdsg2zt) é derivado deste e está excluído do projeto: seus patches não identificam a imagem-mãe."
       ],
       "transformacoes_do_projeto": []
