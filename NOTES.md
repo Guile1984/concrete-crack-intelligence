@@ -36,6 +36,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A24 | 2026-10-27 | O pytest usa `--basetemp=.pytest_tmp` (pasta do projeto, ignorada pelo Git) em vez do `%TEMP%` compartilhado | Incidente de permissões (seção 4) |
 | A25 | 2026-10-27 | Reenumeração da Sprint 1: a aquisição se divide em 1.2 (modelo do registro e comparação), 1.3 (hash em disco e manifesto em JSON) e 1.4 (aquisição do CCSD); as demais lições avançam | Lição 1.2 |
 | A26 | 2026-10-27 | O registro de arquivos usa SHA-256 e caminhos relativos à pasta da fonte, sempre com `/` (sem `.`, `..`, `:` nem barra invertida); a comparação distingue ausente, inesperado e alterado | Lição 1.2 |
+| A27 | 2026-10-28 | O manifesto de arquivos de cada fonte fica em `manifests/arquivos_<fonte>.json`, fora da pasta de dados que descreve; o hash é SHA-256 calculado em blocos de 1 MiB; os arquivos saem ordenados pela string do caminho; o JSON usa indentação de 2 espaços, LF e quebra de linha final | Lição 1.3 |
 
 ## 2. Commits e verificações
 
@@ -55,6 +56,8 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `8a6beb4` | Pytest usa pasta temporária do projeto (A24) | 49 passed no terminal novo, sem traceback; CI verde |
 | `6c48d4b` | A24 e lição 1.1 concluída no NOTES.md | Duas jobs verdes na `main` |
 | `edddc64` | Registro de arquivos e comparação de integridade (lição 1.2) | 76 passed; trava do caminho `.` vista falhando (`DID NOT RAISE`) e desfeita |
+| `7e56d6c` | Lição 1.2 concluída no NOTES.md (A25 e A26) | Duas jobs verdes na `main` (76 passed, 1 passed) |
+| `389203f` | Hash em disco e manifesto de arquivos em JSON (lição 1.3) | 87 passed; teste de arquivo grande visto falhando com o laço de blocos quebrado e desfeito |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -161,6 +164,7 @@ reaparecer, registrar aqui.
   pelas três seeds.
 - **Privacidade:** o e-mail do autor está visível nos commits públicos.
 - **Registro de arquivos:** o hash é registrado no primeiro download (confiança no primeiro uso): protege contra mudança posterior, mas não prova que o arquivo é o publicado pelo autor, porque o Mendeley não fornece hash para comparação. A comparação do domínio não toca em disco; calcular o hash e ler a pasta é da lição 1.3.
+- **Hash em disco:** `registrar_pasta` registra tudo o que estiver na pasta, inclusive arquivos que o sistema acrescenta (como `Thumbs.db` ou `desktop.ini`), que aparecerão como "inesperados" na verificação. O manifesto registra arquivos, não julga o conteúdo. Ler e calcular o hash de uma pasta grande custa tempo de leitura em disco.
 
 ## 7. Versões observadas
 
@@ -229,6 +233,10 @@ final do pytest, seção 4).
 **Lição 1.2 (concluída):** modelo do registro de arquivos (`ArquivoRegistrado`, `ManifestoArquivos`) e comparação (`comparar`) em `domain/integridade.py`, com 27 testes novos; suíte em 76 passed, 1 deselected. A trava do caminho `.` foi vista falhando (`DID NOT RAISE ValueError` em `test_caminho_invalido_e_recusado[./a.jpg]`) e desfeita.
 
 **Divergências corrigidas na lição 1.2:** o `ruff format` reorganizou a lista do `parametrize` (quebra manual de linha), sem mudança de comportamento.
+
+**Lição 1.3 (concluída):** `infrastructure/arquivos.py` (`sha256_do_arquivo`, `registrar_pasta`) e `infrastructure/manifesto_arquivos.py` (`gravar_manifesto`, `carregar_manifesto`), com 11 testes novos; suíte em 87 passed, 1 deselected. Os testes usam vetores padrão do SHA-256 (`abc` e arquivo vazio) e um arquivo de 2,5 MiB para exercitar a leitura em blocos, que foi vista falhando com o laço quebrado (`1 failed, 86 passed`) e desfeita.
+
+**Divergências corrigidas na lição 1.3:** a instrução do gate trocava só o laço `while`, sem mostrar a função inteira, e a linha `return resumo.hexdigest()` ficou de fora na troca (oito testes falharam com `sha256=None`, em vez da falha única prevista). O gate foi refeito com o arquivo completo e passou como esperado. Regra daqui em diante: gates que alteram código vêm com o arquivo inteiro.
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
