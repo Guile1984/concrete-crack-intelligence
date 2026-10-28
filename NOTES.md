@@ -37,6 +37,9 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A25 | 2026-10-27 | Reenumeração da Sprint 1: a aquisição se divide em 1.2 (modelo do registro e comparação), 1.3 (hash em disco e manifesto em JSON) e 1.4 (aquisição do CCSD); as demais lições avançam | Lição 1.2 |
 | A26 | 2026-10-27 | O registro de arquivos usa SHA-256 e caminhos relativos à pasta da fonte, sempre com `/` (sem `.`, `..`, `:` nem barra invertida); a comparação distingue ausente, inesperado e alterado | Lição 1.2 |
 | A27 | 2026-10-28 | O manifesto de arquivos de cada fonte fica em `manifests/arquivos_<fonte>.json`, fora da pasta de dados que descreve; o hash é SHA-256 calculado em blocos de 1 MiB; os arquivos saem ordenados pela string do caminho; o JSON usa indentação de 2 espaços, LF e quebra de linha final | Lição 1.3 |
+| A28 | 2026-10-28 | O extrator de RAR é o `UnRAR.exe` do WinRAR (já instalado), com `t` para testar a integridade e `x` para extrair; o `tar` do Windows não foi testado com este arquivo | Lição 1.4 |
+| A29 | 2026-10-28 | A fonte do CCSD é o RAR baixado direto pelo ícone ao lado do arquivo; o Download All entregou um RAR truncado. Os arquivos truncados ficam em `data/raw/_tentativas/` (fora do registro) como evidência | Lição 1.4 |
+| A30 | 2026-10-28 | Os comandos `registrar` e `verificar` ficam em `presentation/dados.py`, com códigos de saída 0, 1 e 2; só se registra fonte com ficha em `fontes.json`; o manifesto de arquivos é criado uma única vez e não é sobrescrito; o manifesto do CCSD registra o RAR e os 916 arquivos extraídos (917 entradas) | Lição 1.4 |
 
 ## 2. Commits e verificações
 
@@ -58,6 +61,10 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `edddc64` | Registro de arquivos e comparação de integridade (lição 1.2) | 76 passed; trava do caminho `.` vista falhando (`DID NOT RAISE`) e desfeita |
 | `7e56d6c` | Lição 1.2 concluída no NOTES.md (A25 e A26) | Duas jobs verdes na `main` (76 passed, 1 passed) |
 | `389203f` | Hash em disco e manifesto de arquivos em JSON (lição 1.3) | 87 passed; teste de arquivo grande visto falhando com o laço de blocos quebrado e desfeito |
+| `55176da` | Lição 1.3 concluída no NOTES.md (A27) | Duas jobs verdes na `main` |
+| `58434bc` | Comandos `registrar` e `verificar` para fontes de dados (lição 1.4, parte A) | 101 passed; a regra de não sobrescrever o manifesto foi vista falhando (2 failed) e desfeita |
+| `5e18855` | Manifesto de arquivos do CCSD: 917 entradas, RAR direto (A29) | Hash do RAR confere com o `Get-FileHash`; `verificar ccsd` sem divergência |
+| `e676540` | Ficha do CCSD com o download truncado e a estrutura observada | 101 passed |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -139,6 +146,10 @@ reaparecer, registrar aqui.
 - [ ] Sprint 7: avaliar fixar as ações do CI por hash de commit e congelar um `pip freeze`
 - [ ] Conferir se o `ruff` instalado pelo pip está na mesma versão do hook; a autoridade é o hook (A17)
 - [x] Correção duradoura para a pasta temporária do pytest (A24)
+- [ ] Sprint 1, lição 1.6: as máscaras do CCSD são JPEG, com perdas; decidir e registrar o limiar de binarização
+- [ ] Sprint 1: decidir o destino de `data/raw/_tentativas/` (evidência do download truncado) ao fim da sprint
+- [ ] Sprint 1: teste que trave o manifesto real do CCSD (917 entradas e hash do RAR), para rodar no CI
+- [ ] Opcional: relatar ao Mendeley que o Download All entrega o RAR truncado
 
 ## 6. Limitações conhecidas
 
@@ -165,6 +176,7 @@ reaparecer, registrar aqui.
 - **Privacidade:** o e-mail do autor está visível nos commits públicos.
 - **Registro de arquivos:** o hash é registrado no primeiro download (confiança no primeiro uso): protege contra mudança posterior, mas não prova que o arquivo é o publicado pelo autor, porque o Mendeley não fornece hash para comparação. A comparação do domínio não toca em disco; calcular o hash e ler a pasta é da lição 1.3.
 - **Hash em disco:** `registrar_pasta` registra tudo o que estiver na pasta, inclusive arquivos que o sistema acrescenta (como `Thumbs.db` ou `desktop.ini`), que aparecerão como "inesperados" na verificação. O manifesto registra arquivos, não julga o conteúdo. Ler e calcular o hash de uma pasta grande custa tempo de leitura em disco.
+- **Aquisição do CCSD:** o hash do RAR é o do arquivo que o Mendeley serviu em 28/10/2026 (confiança no primeiro uso); o Mendeley não publica hash para comparação. O `UnRAR.exe t` ("Tudo OK") prova que o download bate com as somas que o compressor do autor gravou, não que o conteúdo está correto. Não se sabe se o truncamento do Download All nasce no servidor ou na montagem do pacote. O CI não tem os dados, então o manifesto real só é conferido localmente com `verificar`.
 
 ## 7. Versões observadas
 
@@ -237,6 +249,12 @@ final do pytest, seção 4).
 **Lição 1.3 (concluída):** `infrastructure/arquivos.py` (`sha256_do_arquivo`, `registrar_pasta`) e `infrastructure/manifesto_arquivos.py` (`gravar_manifesto`, `carregar_manifesto`), com 11 testes novos; suíte em 87 passed, 1 deselected. Os testes usam vetores padrão do SHA-256 (`abc` e arquivo vazio) e um arquivo de 2,5 MiB para exercitar a leitura em blocos, que foi vista falhando com o laço quebrado (`1 failed, 86 passed`) e desfeita.
 
 **Divergências corrigidas na lição 1.3:** a instrução do gate trocava só o laço `while`, sem mostrar a função inteira, e a linha `return resumo.hexdigest()` ficou de fora na troca (oito testes falharam com `sha256=None`, em vez da falha única prevista). O gate foi refeito com o arquivo completo e passou como esperado. Regra daqui em diante: gates que alteram código vêm com o arquivo inteiro.
+
+**Lição 1.4 (concluída):** parte A: `config/caminhos.py` e `presentation/dados.py` (comandos `registrar` e `verificar`), 14 testes novos; suíte em 101 passed, 1 deselected. Gate: com o bloco que impede sobrescrever o manifesto comentado, dois testes falharam (`DID NOT RAISE FileExistsError` e `assert 0 == 2`); desfeito. Parte B: aquisição do CCSD, sem abrir nenhuma imagem nem máscara. O Mendeley não pediu login nem aceite de termos.
+
+**Achados da aquisição do CCSD:** o Download All (zip de 714.571.971 bytes, SHA-256 `7a53e401bad7a06d5c74395ad0c6df48fdf0c6e0bd6fce4bf4b031cc441602de`, `testzip` sem erro) continha um único arquivo, um RAR de 714.931.556 bytes, truncado: `UnRAR.exe t` deu "final inesperado do arquivo" e erro de soma de verificação em `rgb\593.JPG`; a listagem tinha 458 máscaras e 446 fotos. O RAR baixado direto (745.914.150 bytes, SHA-256 `1b8458ab6f84dc5086e9af8579e2cabccd3d209df97b46622096a4c105d5a6b2`) passou em "Tudo OK" e extraiu 458 fotos e 458 máscaras, todas em JPEG. O manifesto tem 917 entradas (RAR, 458 fotos e 458 máscaras); o hash do RAR no manifesto confere com o `Get-FileHash`, o que valida `sha256_do_arquivo` num arquivo real de 711 MiB, e `verificar ccsd` não achou divergência. Pelos nomes: máscaras em `BW/` (`.jpg`) e fotos em `rgb/` (`.JPG`), numeração com lacunas.
+
+**Divergências corrigidas na lição 1.4:** (1) a ficha dizia que a lista de arquivos não aparecia na página; ela lista um único RAR de 711 MB (corrigido em `e676540`). (2) Esperava-se o dataset solto dentro do zip; havia um RAR, que o módulo `zipfile` não abre, e foi preciso o `UnRAR.exe`. (3) A hipótese de download interrompido foi levantada e descartada: o zip estava íntegro e já declarava o tamanho truncado do RAR. (4) A contagem de 459 entradas por pasta era ambígua; a extração mostrou 458 arquivos mais a própria pasta em cada grupo.
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
