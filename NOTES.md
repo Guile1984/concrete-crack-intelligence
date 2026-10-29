@@ -40,6 +40,9 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A28 | 2026-10-28 | O extrator de RAR é o `UnRAR.exe` do WinRAR (já instalado), com `t` para testar a integridade e `x` para extrair; o `tar` do Windows não foi testado com este arquivo | Lição 1.4 |
 | A29 | 2026-10-28 | A fonte do CCSD é o RAR baixado direto pelo ícone ao lado do arquivo; o Download All entregou um RAR truncado. Os arquivos truncados ficam em `data/raw/_tentativas/` (fora do registro) como evidência | Lição 1.4 |
 | A30 | 2026-10-28 | Os comandos `registrar` e `verificar` ficam em `presentation/dados.py`, com códigos de saída 0, 1 e 2; só se registra fonte com ficha em `fontes.json`; o manifesto de arquivos é criado uma única vez e não é sobrescrito; o manifesto do CCSD registra o RAR e os 916 arquivos extraídos (917 entradas) | Lição 1.4 |
+| A31 | 2026-10-28 | Protocolo de inspeção das máscaras do CCSD: 40 máscaras sorteadas entre as 458 (seed 20261022); veredito por imagem adequada, inadequada ou duvidosa; inadequada = omissão de fissura visível, excesso (marca algo que não é fissura) ou espessura visivelmente incompatível; reprova o CCSD com 8 ou mais inadequadas de 40 (20%); proporção relevante = 25%; as duvidosas são registradas e não entram na regra, e a sensibilidade (contá-las como inadequadas) é reportada | Lição 1.5 |
+| A32 | 2026-10-28 | O sorteio ordena os nomes pelo SHA-256 de "seed:nome" e pega os primeiros n, sem depender da versão de nenhuma biblioteca de sorteio; um vetor conhecido trava o algoritmo; a amostra é gravada em `manifests/inspecao_ccsd.json` uma única vez e não é refeita | Lição 1.5 |
+| A33 | 2026-10-28 | Só o Gui julga as 40 máscaras. Uma segunda leitura cega pelo Claude (auxiliar, só com concordância reportada) foi considerada e não adotada: imagens de cerca de 12 MPx chegam reduzidas a um modelo de visão, o juiz não tem calibração para a regra de 8 em 40 e seria mais uma camada de circularidade (R16) | Lição 1.5 |
 
 ## 2. Commits e verificações
 
@@ -65,6 +68,11 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `58434bc` | Comandos `registrar` e `verificar` para fontes de dados (lição 1.4, parte A) | 101 passed; a regra de não sobrescrever o manifesto foi vista falhando (2 failed) e desfeita |
 | `5e18855` | Manifesto de arquivos do CCSD: 917 entradas, RAR direto (A29) | Hash do RAR confere com o `Get-FileHash`; `verificar ccsd` sem divergência |
 | `e676540` | Ficha do CCSD com o download truncado e a estrutura observada | 101 passed |
+| `46b9334` | Lição 1.4 concluída no NOTES.md (A28 a A30) | Duas jobs verdes na `main` |
+| `7dd5ba9` | Protocolo de inspeção das máscaras travado em `REGRAS` (A31) | 104 passed; limiar trocado de 8 para 9 de propósito, falhou com `assert 9 == 8`, desfeito; CI verde |
+| `df2b269` | Amostragem determinística por hash (A32) | 114 passed; separador do hash trocado de ":" para "-" de propósito, o vetor conhecido falhou (`('001', '003', '007')` contra `('001', '004', '009')`), desfeito; CI verde |
+| `43888c4` | Comando `sortear` da amostra de inspeção | 123 passed; bloco que impede refazer o sorteio comentado, 2 failed (`DID NOT RAISE FileExistsError` e `assert 0 == 2`), desfeito; CI verde |
+| `14e1dfe` | Amostra de inspeção do CCSD: 40 de 458 máscaras, sorteada antes de qualquer máscara ser vista | CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -135,7 +143,7 @@ reaparecer, registrar aqui.
 
 ## 5. Pendências abertas
 
-- [ ] Sprint 1, antes de olhar as máscaras: fixar o limiar numérico de "máscaras inadequadas"
+- [x] Sprint 1, antes de olhar as máscaras: fixar o limiar numérico de "máscaras inadequadas" (A31: 8 ou mais em 40)
 - [ ] Sprint 1: escolher o método de detecção de quase duplicatas, depois de ver os dados
 - [ ] Sprint 1: ler e aceitar os termos de uso do S2DS antes do download
 - [ ] Sprint 1: avaliar a cópia do S2DS no Drive privado, para o Colab, contra o termo que proíbe distribuir
@@ -175,8 +183,10 @@ reaparecer, registrar aqui.
   pelas três seeds.
 - **Privacidade:** o e-mail do autor está visível nos commits públicos.
 - **Registro de arquivos:** o hash é registrado no primeiro download (confiança no primeiro uso): protege contra mudança posterior, mas não prova que o arquivo é o publicado pelo autor, porque o Mendeley não fornece hash para comparação. A comparação do domínio não toca em disco; calcular o hash e ler a pasta é da lição 1.3.
+- **Inspeção das máscaras (lição 1.5):** a decisão sobre as 458 máscaras vem de 40 imagens julgadas por uma só pessoa, sem segunda opinião; o erro humano não entra no cálculo binomial. Entre 10% e 20% de máscaras inadequadas a regra não decide com segurança (com a regra de 8 em 40: 4,2% de chance de reprovar um dataset com 10% de defeito, 81,8% de detectar um com 25%). O cálculo supõe imagens independentes; a amostra tem fotos de numeração vizinha (por exemplo 131 e 132, 142 e 143, 258 e 259), que podem ser da mesma parede e reduzir o número efetivo de situações independentes. O sorteio é aleatório simples e não garante cobertura de paredes diferentes.
 - **Hash em disco:** `registrar_pasta` registra tudo o que estiver na pasta, inclusive arquivos que o sistema acrescenta (como `Thumbs.db` ou `desktop.ini`), que aparecerão como "inesperados" na verificação. O manifesto registra arquivos, não julga o conteúdo. Ler e calcular o hash de uma pasta grande custa tempo de leitura em disco.
 - **Aquisição do CCSD:** o hash do RAR é o do arquivo que o Mendeley serviu em 28/10/2026 (confiança no primeiro uso); o Mendeley não publica hash para comparação. O `UnRAR.exe t` ("Tudo OK") prova que o download bate com as somas que o compressor do autor gravou, não que o conteúdo está correto. Não se sabe se o truncamento do Download All nasce no servidor ou na montagem do pacote. O CI não tem os dados, então o manifesto real só é conferido localmente com `verificar`.
+
 
 ## 7. Versões observadas
 
@@ -255,6 +265,10 @@ final do pytest, seção 4).
 **Achados da aquisição do CCSD:** o Download All (zip de 714.571.971 bytes, SHA-256 `7a53e401bad7a06d5c74395ad0c6df48fdf0c6e0bd6fce4bf4b031cc441602de`, `testzip` sem erro) continha um único arquivo, um RAR de 714.931.556 bytes, truncado: `UnRAR.exe t` deu "final inesperado do arquivo" e erro de soma de verificação em `rgb\593.JPG`; a listagem tinha 458 máscaras e 446 fotos. O RAR baixado direto (745.914.150 bytes, SHA-256 `1b8458ab6f84dc5086e9af8579e2cabccd3d209df97b46622096a4c105d5a6b2`) passou em "Tudo OK" e extraiu 458 fotos e 458 máscaras, todas em JPEG. O manifesto tem 917 entradas (RAR, 458 fotos e 458 máscaras); o hash do RAR no manifesto confere com o `Get-FileHash`, o que valida `sha256_do_arquivo` num arquivo real de 711 MiB, e `verificar ccsd` não achou divergência. Pelos nomes: máscaras em `BW/` (`.jpg`) e fotos em `rgb/` (`.JPG`), numeração com lacunas.
 
 **Divergências corrigidas na lição 1.4:** (1) a ficha dizia que a lista de arquivos não aparecia na página; ela lista um único RAR de 711 MB (corrigido em `e676540`). (2) Esperava-se o dataset solto dentro do zip; havia um RAR, que o módulo `zipfile` não abre, e foi preciso o `UnRAR.exe`. (3) A hipótese de download interrompido foi levantada e descartada: o zip estava íntegro e já declarava o tamanho truncado do RAR. (4) A contagem de 459 entradas por pasta era ambígua; a extração mostrou 458 arquivos mais a própria pasta em cada grupo.
+
+**Lição 1.5 (concluída):** protocolo de inspeção das máscaras do CCSD fixado e publicado antes de qualquer máscara ser vista (nenhuma imagem do CCSD foi aberta até o `14e1dfe`). Valores em `REGRAS`: 40 máscaras entre 458, seed 20261022, reprovação com 8 ou mais inadequadas (20%), proporção relevante de 25%. Pelo modelo binomial com N = 40, a regra reprova um dataset com 5% de inadequadas em 0,1% das vezes e com 10% em 4,2%; detecta 25% em 81,8% e 35% em 98,8%; entre 10% e 20% ela não decide com segurança. O resultado será reportado com intervalo de Wilson de 95% (por exemplo, 8 inadequadas em 40 dão de 10% a 35%; 0 em 40 dão até 9%). Sorteio por hash em `manifests/inspecao_ccsd.json`, que registra o SHA-256 do manifesto de arquivos (`80da125a8176fdabb7974c4c2665a6aafee4d779ab68b4741971f3f05b7652ef`). O comando lê só o manifesto, sem abrir imagens. Suíte em 123 passed, 1 deselected. As três travas (limiar, vetor do sorteio e "não refazer o sorteio") foram vistas falhando e desfeitas.
+
+**Divergências corrigidas na lição 1.5:** (1) minha previsão de testes para a lição 1.5c saiu errada (anunciei 117 e depois 115); o correto era 114 (104 mais 10 novos). (2) A frase "revisão com Opus" para as duvidosas era ambígua: referia-se ao modelo para discutir a decisão de contingência, não a um segundo juiz das imagens; a regra foi reescrita (A31 e A33). (3) O gate do sorteio e o da amostra exigiram arquivos completos, conforme a regra do processo.
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
