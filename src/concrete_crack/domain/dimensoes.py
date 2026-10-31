@@ -8,6 +8,8 @@ Tamanho = tuple[int, int]
 ContagemTamanhos = tuple[tuple[Tamanho, int], ...]
 ContagemOrientacoes = tuple[tuple[int | None, int], ...]
 
+ORIENTACOES_COM_TROCA_DE_EIXOS = frozenset({5, 6, 7, 8})
+
 
 @dataclass(frozen=True, slots=True)
 class Cabecalho:
@@ -31,6 +33,16 @@ class Cabecalho:
         if self.orientacao_exif is not None and not 1 <= self.orientacao_exif <= 8:
             raise ValueError("orientacao_exif deve ser de 1 a 8, ou None.")
 
+    @property
+    def tamanho_exibido(self) -> Tamanho:
+        """Largura e altura depois de aplicar a orientação EXIF.
+
+        As orientações de 5 a 8 trocam os eixos; as demais não.
+        """
+        if self.orientacao_exif in ORIENTACOES_COM_TROCA_DE_EIXOS:
+            return (self.altura, self.largura)
+        return (self.largura, self.altura)
+
 
 @dataclass(frozen=True, slots=True)
 class ResultadoDimensoes:
@@ -42,9 +54,13 @@ class ResultadoDimensoes:
         tamanhos_fotos: O mesmo para as fotos.
         orientacoes_mascaras: Pares (orientação EXIF, quantidade) das máscaras.
         orientacoes_fotos: O mesmo para as fotos.
-        diferentes: Pares (máscara, foto) de tamanhos diferentes.
+        diferentes: Pares (máscara, foto) de tamanhos gravados diferentes.
         eixos_trocados: Subconjunto de ``diferentes`` em que a largura de um é a
             altura do outro, o que indica rotação.
+        orientacoes_fotos_dos_trocados: Orientações EXIF das fotos dos pares
+            de ``eixos_trocados``.
+        diferentes_apos_orientacao: Pares cujo tamanho exibido (com a orientação
+            EXIF aplicada) ainda é diferente.
     """
 
     tamanhos_mascaras: ContagemTamanhos
@@ -53,6 +69,8 @@ class ResultadoDimensoes:
     orientacoes_fotos: ContagemOrientacoes
     diferentes: tuple[tuple[str, str], ...]
     eixos_trocados: tuple[tuple[str, str], ...]
+    orientacoes_fotos_dos_trocados: ContagemOrientacoes
+    diferentes_apos_orientacao: tuple[tuple[str, str], ...]
 
 
 def _cabecalho(cabecalhos: Mapping[str, Cabecalho], caminho: str) -> Cabecalho:
@@ -91,8 +109,10 @@ def conferir_dimensoes(
     """
     das_mascaras: list[Cabecalho] = []
     das_fotos: list[Cabecalho] = []
+    fotos_dos_trocados: list[Cabecalho] = []
     diferentes: list[tuple[str, str]] = []
     trocados: list[tuple[str, str]] = []
+    apos_orientacao: list[tuple[str, str]] = []
     for mascara, foto in pares:
         cab_m = _cabecalho(cabecalhos, mascara)
         cab_f = _cabecalho(cabecalhos, foto)
@@ -102,6 +122,9 @@ def conferir_dimensoes(
             diferentes.append((mascara, foto))
             if (cab_m.largura, cab_m.altura) == (cab_f.altura, cab_f.largura):
                 trocados.append((mascara, foto))
+                fotos_dos_trocados.append(cab_f)
+        if cab_m.tamanho_exibido != cab_f.tamanho_exibido:
+            apos_orientacao.append((mascara, foto))
     return ResultadoDimensoes(
         tamanhos_mascaras=_tamanhos(das_mascaras),
         tamanhos_fotos=_tamanhos(das_fotos),
@@ -109,4 +132,6 @@ def conferir_dimensoes(
         orientacoes_fotos=_orientacoes(das_fotos),
         diferentes=tuple(sorted(diferentes)),
         eixos_trocados=tuple(sorted(trocados)),
+        orientacoes_fotos_dos_trocados=_orientacoes(fotos_dos_trocados),
+        diferentes_apos_orientacao=tuple(sorted(apos_orientacao)),
     )

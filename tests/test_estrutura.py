@@ -32,9 +32,17 @@ def montar_raiz(
     return raiz
 
 
-def criar_imagem(caminho: Path, tamanho: tuple[int, int]) -> None:
+def criar_imagem(
+    caminho: Path, tamanho: tuple[int, int], orientacao: int | None = None
+) -> None:
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    Image.new("RGB", tamanho).save(caminho)
+    imagem = Image.new("RGB", tamanho)
+    if orientacao is None:
+        imagem.save(caminho)
+    else:
+        exif = Image.Exif()
+        exif[0x0112] = orientacao
+        imagem.save(caminho, exif=exif)
 
 
 def montar_com_imagens(
@@ -172,3 +180,18 @@ def test_main_dimensoes_devolve_2_quando_o_arquivo_falta(
     raiz = montar_raiz(tmp_path, ["BW/001.jpg"], ["rgb/001.JPG"])
     assert main(["--raiz", str(raiz), "dimensoes", "ccsd"]) == 2
     assert "Erro" in capsys.readouterr().err
+
+
+def test_main_dimensoes_devolve_0_quando_a_orientacao_resolve_a_divergencia(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    raiz = montar_raiz(tmp_path, ["BW/001.jpg"], ["rgb/001.JPG"])
+    pasta = pasta_dados_brutos(raiz, "ccsd")
+    criar_imagem(pasta / "BW/001.jpg", (6, 8))
+    criar_imagem(pasta / "rgb/001.JPG", (8, 6), orientacao=6)
+    assert main(["--raiz", str(raiz), "dimensoes", "ccsd"]) == 0
+    saida = capsys.readouterr().out
+    assert "Pares com tamanho diferente: 1" in saida
+    assert "Pares com eixos trocados: 1" in saida
+    assert "Orientações EXIF das fotos nos pares trocados: 6 (1)" in saida
+    assert "Pares com tamanho diferente após a orientação: 0" in saida

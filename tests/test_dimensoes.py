@@ -5,6 +5,7 @@ import pytest
 from concrete_crack.domain.dimensoes import Cabecalho, conferir_dimensoes
 
 PAISAGEM = Cabecalho(4032, 3024, 1)
+PAISAGEM_GIRADA = Cabecalho(4032, 3024, 6)
 RETRATO = Cabecalho(3024, 4032, 6)
 
 
@@ -86,3 +87,65 @@ def test_sem_pares_o_resultado_e_vazio() -> None:
     assert resultado.orientacoes_fotos == ()
     assert resultado.diferentes == ()
     assert resultado.eixos_trocados == ()
+    assert resultado.orientacoes_fotos_dos_trocados == ()
+    assert resultado.diferentes_apos_orientacao == ()
+
+
+@pytest.mark.parametrize(
+    ("orientacao", "esperado"),
+    [
+        (None, (4, 3)),
+        (1, (4, 3)),
+        (2, (4, 3)),
+        (3, (4, 3)),
+        (4, (4, 3)),
+        (5, (3, 4)),
+        (6, (3, 4)),
+        (7, (3, 4)),
+        (8, (3, 4)),
+    ],
+)
+def test_tamanho_exibido_troca_os_eixos_so_nas_orientacoes_5_a_8(
+    orientacao: int | None, esperado: tuple[int, int]
+) -> None:
+    assert Cabecalho(4, 3, orientacao).tamanho_exibido == esperado
+
+
+def test_a_rotacao_exif_resolve_o_par_de_eixos_trocados() -> None:
+    cabecalhos = {"BW/1.jpg": Cabecalho(3024, 4032, 1), "rgb/1.JPG": PAISAGEM_GIRADA}
+    resultado = conferir_dimensoes([("BW/1.jpg", "rgb/1.JPG")], cabecalhos)
+    assert resultado.eixos_trocados == (("BW/1.jpg", "rgb/1.JPG"),)
+    assert resultado.diferentes_apos_orientacao == ()
+
+
+def test_a_rotacao_de_180_graus_nao_altera_o_tamanho() -> None:
+    cabecalhos = {"BW/1.jpg": PAISAGEM, "rgb/1.JPG": Cabecalho(4032, 3024, 3)}
+    resultado = conferir_dimensoes([("BW/1.jpg", "rgb/1.JPG")], cabecalhos)
+    assert resultado.diferentes == ()
+    assert resultado.diferentes_apos_orientacao == ()
+
+
+def test_par_que_continua_divergente_apos_a_orientacao() -> None:
+    cabecalhos = {
+        "BW/1.jpg": Cabecalho(1000, 800, 1),
+        "rgb/1.JPG": Cabecalho(2000, 1600, 6),
+    }
+    resultado = conferir_dimensoes([("BW/1.jpg", "rgb/1.JPG")], cabecalhos)
+    assert resultado.diferentes_apos_orientacao == (("BW/1.jpg", "rgb/1.JPG"),)
+
+
+def test_orientacoes_das_fotos_dos_pares_trocados() -> None:
+    cabecalhos = {
+        "BW/1.jpg": Cabecalho(3024, 4032, 1),
+        "rgb/1.JPG": Cabecalho(4032, 3024, 6),
+        "BW/2.jpg": Cabecalho(3024, 4032, 1),
+        "rgb/2.JPG": Cabecalho(4032, 3024, 6),
+        "BW/3.jpg": Cabecalho(3024, 4032, 1),
+        "rgb/3.JPG": Cabecalho(4032, 3024, 8),
+        "BW/4.jpg": Cabecalho(4032, 3024, 1),
+        "rgb/4.JPG": Cabecalho(4032, 3024, 3),
+    }
+    pares = [(f"BW/{i}.jpg", f"rgb/{i}.JPG") for i in range(1, 5)]
+    resultado = conferir_dimensoes(pares, cabecalhos)
+    assert len(resultado.eixos_trocados) == 3
+    assert resultado.orientacoes_fotos_dos_trocados == ((6, 2), (8, 1))

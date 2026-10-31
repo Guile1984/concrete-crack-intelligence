@@ -136,6 +136,8 @@ def _imprimir_dimensoes(resultado: ResultadoDimensoes) -> None:
     tam_f = _formatar_tamanhos(resultado.tamanhos_fotos)
     ori_m = _formatar_orientacoes(resultado.orientacoes_mascaras)
     ori_f = _formatar_orientacoes(resultado.orientacoes_fotos)
+    ori_t = _formatar_orientacoes(resultado.orientacoes_fotos_dos_trocados)
+    apos = resultado.diferentes_apos_orientacao
     print(f"Tamanhos das máscaras: {tam_m}")
     print(f"Tamanhos das fotos: {tam_f}")
     print(f"Orientações EXIF das máscaras: {ori_m}")
@@ -144,6 +146,9 @@ def _imprimir_dimensoes(resultado: ResultadoDimensoes) -> None:
     _imprimir_pares(resultado.diferentes)
     print(f"Pares com eixos trocados: {len(resultado.eixos_trocados)}")
     _imprimir_pares(resultado.eixos_trocados)
+    print(f"Orientações EXIF das fotos nos pares trocados: {ori_t or 'nenhuma'}")
+    print(f"Pares com tamanho diferente após a orientação: {len(apos)}")
+    _imprimir_pares(apos)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -153,8 +158,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         argv: Argumentos da linha de comando; None usa ``sys.argv``.
 
     Returns:
-        0 se tudo conferir; 1 se houver arquivos sem par ou pares de tamanhos
-        diferentes; 2 em erro.
+        0 se tudo conferir; 1 se houver arquivos sem par ou, no ``dimensoes``,
+        pares de tamanhos diferentes mesmo com a orientação EXIF aplicada;
+        2 em erro.
     """
     parser = argparse.ArgumentParser(
         prog="python -m concrete_crack.presentation.estrutura",
@@ -182,7 +188,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Erro: {erro}", file=sys.stderr)
         return 2
     _imprimir_dimensoes(resultado)
-    return 1 if resultado.diferentes else 0
+    return 1 if resultado.diferentes_apos_orientacao else 0
 
 
 if __name__ == "__main__":
