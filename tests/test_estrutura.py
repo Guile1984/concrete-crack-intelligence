@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 from PIL import Image
 
@@ -12,7 +13,11 @@ from concrete_crack.config.caminhos import (
 from concrete_crack.domain.integridade import ArquivoRegistrado, ManifestoArquivos
 from concrete_crack.infrastructure.manifesto_arquivos import gravar_manifesto
 from concrete_crack.presentation import estrutura, inspecao
-from concrete_crack.presentation.estrutura import main, parear_fonte
+from concrete_crack.presentation.estrutura import (
+    alinhamento_da_fonte,
+    main,
+    parear_fonte,
+)
 
 HASH = "a" * 64
 
@@ -195,3 +200,115 @@ def test_main_dimensoes_devolve_0_quando_a_orientacao_resolve_a_divergencia(
     assert "Pares com eixos trocados: 1" in saida
     assert "Orientações EXIF das fotos nos pares trocados: 6 (1)" in saida
     assert "Pares com tamanho diferente após a orientação: 0" in saida
+
+
+def salvar_cinza(
+    caminho: Path, matriz: np.ndarray, orientacao: int | None = None
+) -> None:
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    imagem = Image.fromarray(np.clip(matriz, 0, 255).astype(np.uint8))
+    if orientacao is None:
+        imagem.save(caminho, quality=100)
+    else:
+        exif = Image.Exif()
+        exif[0x0112] = orientacao
+        imagem.save(caminho, exif=exif, quality=100)
+
+
+def cena() -> tuple[np.ndarray, np.ndarray]:
+    """Devolve (foto exibida, máscara exibida) com uma faixa escura/branca."""
+    foto = np.random.default_rng(0).normal(128, 5, size=(80, 160))
+    foto[24:40, :] = 20
+    mascara = np.zeros((80, 160))
+    mascara[24:40, :] = 255
+    return foto, mascara
+
+
+def montar_alinhamento(
+    tmp_path: Path,
+    casos: list[tuple[np.ndarray, int | None, np.ndarray]],
+) -> Path:
+    """Monta a raiz com um par por caso: (foto armazenada, orientação, máscara)."""
+    mascaras = [f"BW/{i:03d}.jpg" for i in range(1, len(casos) + 1)]
+    fotos = [f"rgb/{i:03d}.JPG" for i in range(1, len(casos) + 1)]
+    raiz = montar_raiz(tmp_path, mascaras, fotos)
+    pasta = pasta_dados_brutos(raiz, "ccsd")
+    for (foto, orientacao, mascara), caminho_m, caminho_f in zip(
+        casos, mascaras, fotos, strict=True
+    ):
+        salvar_cinza(pasta / caminho_f, foto, orientacao)
+        salvar_cinza(pasta / caminho_m, mascara)
+    return raiz
+
+
+def test_alinhamento_confirma_o_grupo_sem_exif(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    foto, mascara = cena()
+    raiz = montar_alinhamento(tmp_path, [(foto, None, mascara)])
+    assert main(["--raiz", str(raiz), "alinhamento", "ccsd"]) == 0
+    saida = capsys.readouterr().out
+    assert "orientação ausente: 1 pares" in saida
+    assert "[confirmado]" in saida
+
+
+def test_alinhamento_confirma_exif_6_com_a_mascara_na_orientacao_exibida(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    foto, mascara = cena()
+    raiz = montar_alinhamento(tmp_path, [(np.rot90(foto, 1), 6, mascara)])
+    assert main(["--raiz", str(raiz), "alinhamento", "ccsd"]) == 0
+    saida = capsys.readouterr().out
+    assert "orientação 6: 1 pares" in saida
+    assert "[confirmado]" in saida
+
+
+def test_alinhamento_reprova_exif_6_com_a_mascara_girada_180(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    foto, mascara = cena()
+    girada = np.rot90(mascara, 2)
+    raiz = montar_alinhamento(tmp_path, [(np.rot90(foto, 1), 6, girada)])
+    assert main(["--raiz", str(raiz), "alinhamento", "ccsd"]) == 1
+    assert "[NÃO CONFIRMADO]" in capsys.readouterr().out
+
+
+def test_alinhamento_conta_mascara_sem_fissura_como_sem_contraste(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    foto, _ = cena()
+    raiz = montar_alinhamento(tmp_path, [(foto, None, np.zeros((80, 160)))])
+    assert main(["--raiz", str(raiz), "alinhamento", "ccsd"]) == 1
+    assert "Máscaras sem contraste definido: 1" in capsys.readouterr().out
+
+
+def test_alinhamento_aponta_forma_incompativel(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    foto, mascara = cena()
+    raiz = montar_alinhamento(tmp_path, [(foto, None, mascara[:40, :80])])
+    assert main(["--raiz", str(raiz), "alinhamento", "ccsd"]) == 1
+    saida = capsys.readouterr().out
+    assert "Formas incompatíveis: 1" in saida
+    assert "BW/001.jpg" in saida
+
+
+def test_alinhamento_agrupa_pela_orientacao_da_foto(tmp_path: Path) -> None:
+    foto, mascara = cena()
+    raiz = montar_alinhamento(
+        tmp_path,
+        [(foto, None, mascara), (np.rot90(foto, 1), 6, mascara)],
+    )
+    resultado = alinhamento_da_fonte(raiz, "ccsd")
+    assert set(resultado.resumos) == {None, 6}
+    assert resultado.resumos[None].n == 1
+    assert resultado.resumos[6].n == 1
+    assert resultado.confirmado
+
+
+def test_alinhamento_devolve_2_quando_o_arquivo_falta(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    raiz = montar_raiz(tmp_path, ["BW/001.jpg"], ["rgb/001.JPG"])
+    assert main(["--raiz", str(raiz), "alinhamento", "ccsd"]) == 2
+    assert "Erro" in capsys.readouterr().err
