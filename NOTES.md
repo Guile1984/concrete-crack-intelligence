@@ -43,6 +43,8 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | A31 | 2026-10-28 | Protocolo de inspeção das máscaras do CCSD: 40 máscaras sorteadas entre as 458 (seed 20261022); veredito por imagem adequada, inadequada ou duvidosa; inadequada = omissão de fissura visível, excesso (marca algo que não é fissura) ou espessura visivelmente incompatível; reprova o CCSD com 8 ou mais inadequadas de 40 (20%); proporção relevante = 25%; as duvidosas são registradas e não entram na regra, e a sensibilidade (contá-las como inadequadas) é reportada | Lição 1.5 |
 | A32 | 2026-10-28 | O sorteio ordena os nomes pelo SHA-256 de "seed:nome" e pega os primeiros n, sem depender da versão de nenhuma biblioteca de sorteio; um vetor conhecido trava o algoritmo; a amostra é gravada em `manifests/inspecao_ccsd.json` uma única vez e não é refeita | Lição 1.5 |
 | A33 | 2026-10-28 | Só o Gui julga as 40 máscaras. Uma segunda leitura cega pelo Claude (auxiliar, só com concordância reportada) foi considerada e não adotada: imagens de cerca de 12 MPx chegam reduzidas a um modelo de visão, o juiz não tem calibração para a regra de 8 em 40 e seria mais uma camada de circularidade (R16) | Lição 1.5 |
+| A34 | 2026-10-31 | Política de orientação do CCSD: as fotos são lidas com a orientação EXIF aplicada (a etiqueta 0x0112 é lida, mas o `ImageOps.exif_transpose` não entra na leitura do cabeçalho); as máscaras já estão na orientação de exibição (sem EXIF, ou EXIF 1). As dimensões de foto e máscara só são comparadas depois de aplicar a orientação (`tamanho_exibido`). Verificado em 458 de 458 pares pelo teste de contraste da A35 | Lição 1.6 |
+| A35 | 2026-10-31 | Teste de alinhamento foto-máscara por contraste: para cada par, compara o contraste sob a máscara na orientação EXIF e na orientação oposta (180°); fotos e máscaras lidas com redução de 8x; fissura da máscara = pixels que diferem do fundo (mediana) em 32 níveis ou mais; um grupo de orientação é confirmado com 90% ou mais de vantagens positivas; método e critério fixados antes da rodada real; os grupos sem EXIF e EXIF 1 são o controle. Limites: resolução de 1/8, só orientação contra a oposta (sem espelhamentos), não prova alinhamento ao pixel | Lição 1.6 |
 
 ## 2. Commits e verificações
 
@@ -73,6 +75,14 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `df2b269` | Amostragem determinística por hash (A32) | 114 passed; separador do hash trocado de ":" para "-" de propósito, o vetor conhecido falhou (`('001', '003', '007')` contra `('001', '004', '009')`), desfeito; CI verde |
 | `43888c4` | Comando `sortear` da amostra de inspeção | 123 passed; bloco que impede refazer o sorteio comentado, 2 failed (`DID NOT RAISE FileExistsError` e `assert 0 == 2`), desfeito; CI verde |
 | `14e1dfe` | Amostra de inspeção do CCSD: 40 de 458 máscaras, sorteada antes de qualquer máscara ser vista | CI verde |
+| `b3de743` | Lição 1.5 concluída no NOTES.md (A31 a A33) | CI verde |
+| `566e0d4` | Pareamento de máscaras e fotos pelo nome (`domain/pareamento.py`) | 130 passed; CI verde |
+| `f1865f4` | Comando `parear` (`presentation/estrutura.py`) | 140 passed; 458 pares, pareamento completo; CI verde |
+| `7d06213` | Conferência de dimensões no domínio (`Cabecalho`, `conferir_dimensoes`) | CI verde |
+| `ae99663` | Leitura do cabeçalho da imagem (largura, altura, orientação EXIF) em `infrastructure/imagens.py` | CI verde |
+| `d2d044e` | Subcomando `dimensoes` | 179 pares com eixos trocados, achados no CCSD real; CI verde |
+| `ed2fa18` | Tamanho exibido com a orientação EXIF na conferência de dimensões | 173 passed; 0 divergências de tamanho após a orientação; CI verde |
+| `2fa0082` | Alinhamento foto-máscara: orientação EXIF verificada por contraste (A34, A35) | 244 passed; 458 de 458 pares com vantagem positiva; sentido da rotação 6 e 8 invertido de propósito reprovou o grupo 6 (0%) e quebrou 5 testes, desfeito; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -154,10 +164,13 @@ reaparecer, registrar aqui.
 - [ ] Sprint 7: avaliar fixar as ações do CI por hash de commit e congelar um `pip freeze`
 - [ ] Conferir se o `ruff` instalado pelo pip está na mesma versão do hook; a autoridade é o hook (A17)
 - [x] Correção duradoura para a pasta temporária do pytest (A24)
-- [ ] Sprint 1, lição 1.6: as máscaras do CCSD são JPEG, com perdas; decidir e registrar o limiar de binarização
+- [ ] Sprint 1: as máscaras do CCSD são JPEG, com perdas; decidir e registrar a binarização para o treino (o teste de alinhamento usou só um critério provisório, desvio de 32 do fundo, A35; a decisão definitiva exige o histograma agregado dos valores)
 - [ ] Sprint 1: decidir o destino de `data/raw/_tentativas/` (evidência do download truncado) ao fim da sprint
 - [ ] Sprint 1: teste que trave o manifesto real do CCSD (917 entradas e hash do RAR), para rodar no CI
 - [ ] Opcional: relatar ao Mendeley que o Download All entrega o RAR truncado
+- [ ] Sprint 1, lição 1.7: inspecionar as 40 máscaras sorteadas, com visualizador que aplique a orientação EXIF e gabarito de veredito (adequada, inadequada, duvidosa); só o Gui julga (A31, A33)
+- [ ] Sprint 1: tratar a heterogeneidade de resolução nos tiles (fotos armazenadas: 438 em 4032x3024, 13 em 3264x2448, 7 em 2448x3264)
+- [ ] Se a inspeção das 40 máscaras apontar deslocamentos, refazer o teste de alinhamento com resolução maior (limite da A35)
 
 ## 6. Limitações conhecidas
 
@@ -269,6 +282,18 @@ final do pytest, seção 4).
 **Lição 1.5 (concluída):** protocolo de inspeção das máscaras do CCSD fixado e publicado antes de qualquer máscara ser vista (nenhuma imagem do CCSD foi aberta até o `14e1dfe`). Valores em `REGRAS`: 40 máscaras entre 458, seed 20261022, reprovação com 8 ou mais inadequadas (20%), proporção relevante de 25%. Pelo modelo binomial com N = 40, a regra reprova um dataset com 5% de inadequadas em 0,1% das vezes e com 10% em 4,2%; detecta 25% em 81,8% e 35% em 98,8%; entre 10% e 20% ela não decide com segurança. O resultado será reportado com intervalo de Wilson de 95% (por exemplo, 8 inadequadas em 40 dão de 10% a 35%; 0 em 40 dão até 9%). Sorteio por hash em `manifests/inspecao_ccsd.json`, que registra o SHA-256 do manifesto de arquivos (`80da125a8176fdabb7974c4c2665a6aafee4d779ab68b4741971f3f05b7652ef`). O comando lê só o manifesto, sem abrir imagens. Suíte em 123 passed, 1 deselected. As três travas (limiar, vetor do sorteio e "não refazer o sorteio") foram vistas falhando e desfeitas.
 
 **Divergências corrigidas na lição 1.5:** (1) minha previsão de testes para a lição 1.5c saiu errada (anunciei 117 e depois 115); o correto era 114 (104 mais 10 novos). (2) A frase "revisão com Opus" para as duvidosas era ambígua: referia-se ao modelo para discutir a decisão de contingência, não a um segundo juiz das imagens; a regra foi reescrita (A31 e A33). (3) O gate do sorteio e o da amostra exigiram arquivos completos, conforme a regra do processo.
+
+**Lição 1.6 (concluída):** integridade estrutural do CCSD, sem inspecionar nenhuma máscara e sem mostrar nenhuma imagem. Subdividida em 1.6a a 1.6k.
+
+**Pareamento:** `domain/pareamento.py` pareia por nome (sem pasta, extensão nem maiúsculas) e recusa colisões. Resultado no CCSD: 458 pares, nenhuma máscara sem foto e nenhuma foto sem máscara. O nome prova a ausência de arquivo órfão, não que as duas imagens sejam da mesma cena; essa evidência veio do teste de alinhamento (os 458 pares tiveram sinal correto).
+
+**Dimensões:** o cabeçalho é lido com o Pillow sem decodificar os pixels (`infrastructure/imagens.py`). Sem considerar a orientação EXIF, 179 pares tinham eixos trocados: todos têm foto com EXIF 6 e tamanho armazenado 4032x3024, enquanto a máscara correspondente está em 3024x4032, sem EXIF. Aplicando a orientação (`tamanho_exibido`), as divergências de tamanho caem a zero em 458 pares. Orientações EXIF das fotos: ausente 257, 6 em 179, 3 em 15, 1 em 7; as máscaras não têm orientação (ausente ou 1).
+
+**Alinhamento:** igualdade de tamanho não prova alinhamento (o sentido da rotação e as 15 fotos com EXIF 3 ficavam sem verificação). O teste de contraste (A35) deu 100% de vantagens positivas em todos os grupos: ausente 257 pares (mediana 3,00, mín 0,82), EXIF 1 com 7 (2,03; 1,31), EXIF 3 com 15 (3,07; 1,61) e EXIF 6 com 179 (3,32; 0,97). Nenhuma máscara ficou sem contraste definido e nenhuma teve forma incompatível. Resultado: política A34. Gate: com o sentido de rotação das orientações 6 e 8 invertido, o comando nos dados reais deu para o grupo 6 `0.0% positivas, mediana -3,32, mín -7,64, máx -0,97` (o negativo exato do resultado correto, como previsto antes de rodar), código de saída 1, e o pytest falhou em 5 testes; desfeito, a saída voltou à original. Suíte em 244 passed, 1 deselected.
+
+**Limitações do teste de alinhamento:** resolução de 1/8; compara só a orientação EXIF com a oposta (180°); não testa espelhamentos (inexistentes nas fotos do CCSD); não prova alinhamento ao pixel nem a qualidade do traçado, que é assunto da inspeção das 40 máscaras (lição 1.7). Os parâmetros (desvio 32, redução 8x, critério de 90%) valem só para este teste.
+
+**Divergências corrigidas na lição 1.6:** (1) minha previsão de testes para a lição 1.6b saiu errada (139 em vez de 140). (2) Um erro de digitação no texto da 1.6a ("batería") foi corrigido. (3) O `ruff format` reformatou uma lista quebrada à mão em `tests/test_dimensoes.py`, sem mudança de comportamento. (4) O plano inicial de binarizar a máscara com limiar fixo (128) e regra de inversão foi trocado por "desvio do fundo", porque a redução de 8x acinzenta as fissuras finas e o limiar as apagaria, e porque dispensa saber a polaridade da máscara. (5) Após o gate, o Gui conferiu o `orientacao.py` restaurado antes de seguir. (6) O commit `2fa0082` ficou sem o prefixo `feat:` usado nos anteriores, sem consequência
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
