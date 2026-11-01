@@ -14,9 +14,9 @@ _TRANSFORMACOES: dict[int, Callable[[np.ndarray], np.ndarray]] = {
     2: np.fliplr,
     3: lambda m: np.rot90(m, 2),
     4: np.flipud,
-    5: lambda m: m.T,
+    5: lambda m: np.swapaxes(m, 0, 1),
     6: lambda m: np.rot90(m, -1),
-    7: lambda m: np.rot90(m, 2).T,
+    7: lambda m: np.swapaxes(np.rot90(m, 2), 0, 1),
     8: lambda m: np.rot90(m, 1),
 }
 
@@ -34,10 +34,14 @@ def _normalizar(orientacao: int | None) -> int:
 
 
 def aplicar_orientacao(matriz: np.ndarray, orientacao: int | None) -> np.ndarray:
-    """Aplica a uma matriz 2D a orientação EXIF, como um visualizador faria.
+    """Aplica a uma matriz a orientação EXIF, como um visualizador faria.
+
+    Só os dois primeiros eixos (linhas e colunas) são movidos; um eixo de canais
+    de cor, se houver, fica como está.
 
     Args:
-        matriz: Pixels como armazenados no arquivo (linhas x colunas).
+        matriz: Pixels como armazenados no arquivo: linhas x colunas, ou
+            linhas x colunas x canais.
         orientacao: Valor da etiqueta EXIF 0x0112 (1 a 8) ou None se ausente.
 
     Returns:

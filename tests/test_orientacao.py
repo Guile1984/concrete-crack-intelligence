@@ -44,6 +44,17 @@ def test_aplicar_orientacao_concorda_com_o_pillow(orientacao: int) -> None:
     assert np.array_equal(aplicar_orientacao(matriz, orientacao), esperado)
 
 
+@pytest.mark.parametrize("orientacao", range(1, 9))
+def test_aplicar_orientacao_em_imagem_rgb_concorda_com_o_pillow(
+    orientacao: int,
+) -> None:
+    matriz = np.arange(36, dtype=np.uint8).reshape(3, 4, 3)
+    imagem = Image.fromarray(matriz)
+    imagem.getexif()[0x0112] = orientacao
+    esperado = np.asarray(ImageOps.exif_transpose(imagem))
+    assert np.array_equal(aplicar_orientacao(matriz, orientacao), esperado)
+
+
 def test_aplicar_orientacao_nao_altera_a_entrada() -> None:
     matriz = matriz_assimetrica()
     copia = matriz.copy()

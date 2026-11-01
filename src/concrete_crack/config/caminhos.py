@@ -52,3 +52,16 @@ def caminho_amostra_inspecao(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``manifests/inspecao_<fonte_id>.json``.
     """
     return raiz / "manifests" / f"inspecao_{fonte_id}.json"
+
+
+def pasta_imagens_inspecao(raiz: Path, fonte_id: str) -> Path:
+    """Devolve a pasta das imagens preparadas para a inspeção das máscaras.
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte (por exemplo ccsd).
+
+    Returns:
+        O caminho de ``data/interim/inspecao_<fonte_id>``.
+    """
+    return raiz / "data" / "interim" / f"inspecao_{fonte_id}"

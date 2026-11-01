@@ -1,4 +1,4 @@
-"""Leitura de imagens: o cabeçalho, sem decodificar, e os pixels em cinza."""
+"""Leitura de imagens (cabeçalho e pixels reduzidos) e gravação de PNG."""
 
 from pathlib import Path
 
@@ -37,6 +37,20 @@ def ler_cabecalho(caminho: Path) -> Cabecalho:
         raise ValueError(f"{caminho}: {erro}") from erro
 
 
+def _decodificar(caminho: Path, fator: int, modo: str) -> np.ndarray:
+    """Decodifica uma imagem reduzida por um fator inteiro, no modo pedido."""
+    if fator < 1:
+        raise ValueError(f"fator deve ser um inteiro positivo, não {fator}.")
+    with Image.open(caminho) as imagem:
+        largura, altura = imagem.size
+        alvo = (max(1, largura // fator), max(1, altura // fator))
+        imagem.draft(modo, alvo)
+        convertida = imagem.convert(modo)
+        if convertida.size != alvo:
+            convertida = convertida.resize(alvo, Image.Resampling.BOX)
+        return np.array(convertida)
+
+
 def ler_cinza(caminho: Path, fator: int) -> np.ndarray:
     """Lê uma imagem em tons de cinza, reduzida por um fator inteiro.
 
@@ -57,13 +71,41 @@ def ler_cinza(caminho: Path, fator: int) -> np.ndarray:
         FileNotFoundError: Se o arquivo não existir.
         OSError: Se o arquivo não for uma imagem reconhecida.
     """
-    if fator < 1:
-        raise ValueError(f"fator deve ser um inteiro positivo, não {fator}.")
-    with Image.open(caminho) as imagem:
-        largura, altura = imagem.size
-        alvo = (max(1, largura // fator), max(1, altura // fator))
-        imagem.draft("L", alvo)
-        cinza = imagem.convert("L")
-        if cinza.size != alvo:
-            cinza = cinza.resize(alvo, Image.Resampling.BOX)
-        return np.array(cinza)
+    return _decodificar(caminho, fator, "L")
+
+
+def ler_rgb(caminho: Path, fator: int) -> np.ndarray:
+    """Lê uma imagem colorida, reduzida por um fator inteiro.
+
+    Como em ``ler_cinza``, a matriz fica como armazenada no arquivo, sem aplicar
+    a orientação EXIF. Imagens em tons de cinza são convertidas para RGB.
+
+    Args:
+        caminho: Arquivo de imagem.
+        fator: Divisor inteiro das dimensões (1 mantém o tamanho original).
+
+    Returns:
+        Matriz uint8 de forma (altura // fator, largura // fator, 3).
+
+    Raises:
+        ValueError: Se ``fator`` for menor que 1.
+        FileNotFoundError: Se o arquivo não existir.
+        OSError: Se o arquivo não for uma imagem reconhecida.
+    """
+    return _decodificar(caminho, fator, "RGB")
+
+
+def gravar_png(caminho: Path, imagem: np.ndarray) -> None:
+    """Grava uma matriz uint8 como PNG, criando as pastas que faltarem.
+
+    Args:
+        caminho: Arquivo de destino; um arquivo existente é substituído.
+        imagem: Matriz uint8, em tons de cinza (2D) ou RGB (3D).
+
+    Raises:
+        ValueError: Se a matriz não for uint8.
+    """
+    if imagem.dtype != np.uint8:
+        raise ValueError("A imagem precisa ser uint8.")
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(imagem).save(caminho, format="PNG")
