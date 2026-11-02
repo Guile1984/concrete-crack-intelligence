@@ -5,13 +5,15 @@ Uso, a partir da raiz do projeto::
     python -m concrete_crack.presentation.inspecao sortear ccsd
     python -m concrete_crack.presentation.inspecao preparar ccsd
     python -m concrete_crack.presentation.inspecao julgar ccsd
+    python -m concrete_crack.presentation.inspecao resultado ccsd
 
 O ``sortear`` lê só o manifesto (nomes e hashes): não abre nenhuma imagem. O
 ``preparar`` grava, para cada máscara sorteada, um PNG com dois painéis: a foto
 limpa à esquerda e a foto com a máscara em vermelho à direita, separados por uma
 faixa azul. O ``julgar`` conduz a sessão de julgamento, gravando cada veredito
 na hora; o ``corrigir`` muda um veredito já dado e recebe, depois da fonte, a
-máscara (como BW/001.jpg), o veredito novo e o motivo.
+máscara (como BW/001.jpg), o veredito novo e o motivo. O ``resultado`` aplica a
+regra pré-registrada aos vereditos e só roda com os julgamentos completos.
 """
 
 import argparse
@@ -35,7 +37,7 @@ from ..domain.orientacao import aplicar_orientacao
 from ..domain.painel import montar_painel
 from ..domain.registro_vereditos import RegistroVereditos
 from ..domain.sobreposicao import intensidade_da_mascara, sobrepor_mascara
-from ..domain.veredito import Veredito
+from ..domain.veredito import ResultadoInspecao, Veredito, avaliar
 from ..infrastructure.arquivos import sha256_do_arquivo
 from ..infrastructure.imagens import gravar_png, ler_cabecalho, ler_cinza, ler_rgb
 from ..infrastructure.manifesto_arquivos import carregar_manifesto
@@ -304,6 +306,91 @@ def corrigir_veredito(
     return corrigido
 
 
+def calcular_resultado(
+    raiz: Path, fonte_id: str
+) -> tuple[RegistroVereditos, ResultadoInspecao]:
+    """Aplica a regra pré-registrada aos vereditos de uma inspeção completa.
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte, com todas as máscaras julgadas.
+
+    Returns:
+        O registro lido e o resultado da avaliação.
+
+    Raises:
+        FileNotFoundError: Se não houver vereditos registrados.
+        ValueError: Se o registro for de outra amostra, a amostra não tiver o
+            tamanho pré-registrado ou ainda houver máscaras sem julgamento.
+    """
+    destino = caminho_vereditos_inspecao(raiz, fonte_id)
+    if not destino.exists():
+        raise FileNotFoundError(f"Ainda não há vereditos registrados em {destino}.")
+    registro = _carregar_registro_da_inspecao(raiz, fonte_id)
+    if len(registro.amostra) != REGRAS.n_inspecao_mascaras:
+        raise ValueError(
+            f"A amostra tem {len(registro.amostra)} máscaras; o pré-registro "
+            f"exige {REGRAS.n_inspecao_mascaras}."
+        )
+    if not registro.completo:
+        raise ValueError(
+            f"O julgamento está incompleto: faltam {len(registro.pendentes)} máscaras."
+        )
+    resultado = avaliar(registro.vereditos, REGRAS.limiar_reprovacao_mascaras)
+    return registro, resultado
+
+
+def _percentual(valor: float) -> str:
+    """Formata uma proporção como percentual com uma casa decimal."""
+    return f"{valor * 100:.1f}%"
+
+
+def formatar_resultado(
+    fonte_id: str, registro: RegistroVereditos, resultado: ResultadoInspecao
+) -> str:
+    """Monta o texto do resultado da inspeção, pronto para ler e registrar.
+
+    Args:
+        fonte_id: Identificador da fonte.
+        registro: O registro completo da inspeção.
+        resultado: O resultado calculado pela regra pré-registrada.
+
+    Returns:
+        O relatório em várias linhas.
+    """
+    n = resultado.n
+    horas = [datetime.fromisoformat(j.registrado_em) for j in registro.julgamentos]
+    duracao = (max(horas) - min(horas)).total_seconds() / 60
+    inferior, superior = resultado.intervalo_inadequadas
+    inf_sens, sup_sens = resultado.intervalo_sensibilidade
+    decisao = "REPROVADA" if resultado.reprovada else "APROVADA"
+    decisao_sens = (
+        "REPROVADA"
+        if resultado.reprovada_se_duvidosas_forem_inadequadas
+        else "APROVADA"
+    )
+    depende = "sim" if resultado.conclusao_depende_das_duvidosas else "não"
+    linhas = [
+        f"Inspeção das máscaras de {fonte_id}",
+        f"Máscaras julgadas: {n}",
+        f"Adequadas:   {resultado.adequadas} ({_percentual(resultado.adequadas / n)})",
+        f"Inadequadas: {resultado.inadequadas} "
+        f"({_percentual(resultado.inadequadas / n)}); "
+        f"Wilson 95%: {_percentual(inferior)} a {_percentual(superior)}",
+        f"Duvidosas:   {resultado.duvidosas} ({_percentual(resultado.duvidosas / n)})",
+        f"Regra A31: reprova com {resultado.limiar_reprovacao} ou mais inadequadas.",
+        f"Decisão: fonte {decisao}.",
+        "Sensibilidade (duvidosas contadas como inadequadas): "
+        f"fonte {decisao_sens}; "
+        f"Wilson 95%: {_percentual(inf_sens)} a {_percentual(sup_sens)}.",
+        f"A conclusão depende das duvidosas: {depende}.",
+        f"Correções registradas: {len(registro.correcoes)}.",
+        f"Duração do julgamento: {duracao:.0f} min "
+        f"({min(horas).isoformat()} a {max(horas).isoformat()}).",
+    ]
+    return "\n".join(linhas)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Executa os comandos de inspeção.
 
@@ -327,6 +414,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     preparar.add_argument("fonte_id")
     julgar = comandos.add_parser("julgar", help="conduz a sessão de julgamento")
     julgar.add_argument("fonte_id")
+    resultado = comandos.add_parser("resultado", help="aplica a regra aos vereditos")
+    resultado.add_argument("fonte_id")
     corrigir = comandos.add_parser("corrigir", help="corrige um veredito já dado")
     corrigir.add_argument("fonte_id")
     corrigir.add_argument("mascara", help="máscara da amostra, como BW/064.jpg")
@@ -354,6 +443,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         elif args.comando == "julgar":
             julgar_amostra(raiz, args.fonte_id, input, print, abrir_imagem, agora_utc)
+        elif args.comando == "resultado":
+            registro, avaliacao = calcular_resultado(raiz, args.fonte_id)
+            print(formatar_resultado(args.fonte_id, registro, avaliacao))
         else:
             corrigir_veredito(
                 raiz,
