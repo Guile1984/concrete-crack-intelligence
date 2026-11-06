@@ -113,3 +113,55 @@ def test_fracao_maxima_de_fissura_fora_do_intervalo_e_recusada(
 ) -> None:
     with pytest.raises(ValueError, match="fração"):
         replace(REGRAS, fracao_maxima_fissura_por_mascara=fracao)
+
+
+def test_dhash_duplo_de_128_bits_com_leitura_reduzida_em_8() -> None:
+    assert REGRAS.fator_leitura_duplicatas == 8
+    assert REGRAS.lado_hash_duplicatas == 8
+
+
+def test_controle_positivo_com_40_bases_e_seed_fixa() -> None:
+    assert REGRAS.n_bases_controle_duplicatas == 40
+    assert REGRAS.seed_controle_duplicatas == 20261106
+
+
+def test_variacoes_fabricadas_do_controle_positivo() -> None:
+    assert REGRAS.qualidade_jpeg_controle == 70
+    assert REGRAS.fatores_brilho_controle == (0.85, 1.15)
+    assert REGRAS.recortes_controle == (0.05, 0.10)
+
+
+def test_limiar_reconhece_95_por_cento_das_variacoes() -> None:
+    assert REGRAS.cobertura_limiar_duplicatas == 0.95
+
+
+def test_hash_reprovado_com_grupo_acima_de_10_ou_pares_acima_de_2_por_cento() -> None:
+    assert REGRAS.fracao_maxima_grupo_duplicatas == 0.10
+    assert REGRAS.fracao_maxima_pares_duplicatas == 0.02
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("fator_leitura_duplicatas", 0, "fator de leitura"),
+        ("lado_hash_duplicatas", 1, "lado do hash"),
+        ("n_bases_controle_duplicatas", 0, "base"),
+        ("qualidade_jpeg_controle", 0, "qualidade"),
+        ("qualidade_jpeg_controle", 96, "qualidade"),
+        ("fatores_brilho_controle", (), "brilho"),
+        ("fatores_brilho_controle", (1.0,), "brilho"),
+        ("fatores_brilho_controle", (0.0,), "brilho"),
+        ("recortes_controle", (), "recortes"),
+        ("recortes_controle", (0.5,), "recortes"),
+        ("recortes_controle", (0.0,), "recortes"),
+        ("cobertura_limiar_duplicatas", 0.0, "cobertura"),
+        ("cobertura_limiar_duplicatas", 1.5, "cobertura"),
+        ("fracao_maxima_grupo_duplicatas", 1.0, "grupo"),
+        ("fracao_maxima_pares_duplicatas", 0.0, "pares"),
+    ],
+)
+def test_regras_de_duplicatas_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})

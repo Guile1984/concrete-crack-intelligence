@@ -41,6 +41,23 @@ class RegrasPreRegistradas:
         fracao_maxima_fissura_por_mascara: Fração de pixels de fissura, no
             limiar de binarização, acima da qual uma máscara entra na lista de
             anomalias (suspeita de polaridade ou limiar inadequado).
+        fator_leitura_duplicatas: Redução das fotos na leitura para o hash de
+            quase-duplicatas (a orientação EXIF é aplicada depois da leitura).
+        lado_hash_duplicatas: Lado do dHash; cada direção (horizontal e
+            vertical) gera lado x lado bits, num total de 2 x lado x lado.
+        n_bases_controle_duplicatas: Quantas fotos servem de base para as
+            duplicatas fabricadas do controle positivo.
+        seed_controle_duplicatas: Semente do sorteio das bases e dos lados de
+            recorte do controle positivo.
+        qualidade_jpeg_controle: Qualidade da recompressão JPEG fabricada.
+        fatores_brilho_controle: Fatores de brilho das variações fabricadas.
+        recortes_controle: Frações recortadas de um lado nas variações.
+        cobertura_limiar_duplicatas: Fração mínima das variações fabricadas
+            reconhecidas no limiar; o limiar é o menor inteiro que a atinge.
+        fracao_maxima_grupo_duplicatas: O hash é reprovado se o maior grupo
+            tiver mais que esta fração das fotos.
+        fracao_maxima_pares_duplicatas: O hash é reprovado se mais que esta
+            fração dos pares de fotos reais ficar a distância <= limiar.
     """
 
     proporcao_treino: float = 0.70
@@ -65,6 +82,16 @@ class RegrasPreRegistradas:
     limiar_patamar_alto: int = 192
     razao_minima_patamar: float = 0.80
     fracao_maxima_fissura_por_mascara: float = 0.10
+    fator_leitura_duplicatas: int = 8
+    lado_hash_duplicatas: int = 8
+    n_bases_controle_duplicatas: int = 40
+    seed_controle_duplicatas: int = 20261106
+    qualidade_jpeg_controle: int = 70
+    fatores_brilho_controle: tuple[float, ...] = (0.85, 1.15)
+    recortes_controle: tuple[float, ...] = (0.05, 0.10)
+    cobertura_limiar_duplicatas: float = 0.95
+    fracao_maxima_grupo_duplicatas: float = 0.10
+    fracao_maxima_pares_duplicatas: float = 0.02
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -95,6 +122,36 @@ class RegrasPreRegistradas:
         if not 0 < self.fracao_maxima_fissura_por_mascara < 1:
             raise ValueError(
                 "A fração máxima de fissura por máscara deve estar em (0, 1)."
+            )
+        self._validar_duplicatas()
+
+    def _validar_duplicatas(self) -> None:
+        """Recusa regras de quase-duplicatas fora dos intervalos válidos."""
+        if self.fator_leitura_duplicatas < 1:
+            raise ValueError("O fator de leitura das duplicatas deve ser >= 1.")
+        if self.lado_hash_duplicatas < 2:
+            raise ValueError("O lado do hash deve ser pelo menos 2.")
+        if self.n_bases_controle_duplicatas < 1:
+            raise ValueError("O controle positivo precisa de pelo menos 1 base.")
+        if not 1 <= self.qualidade_jpeg_controle <= 95:
+            raise ValueError("A qualidade JPEG do controle deve estar entre 1 e 95.")
+        brilhos = self.fatores_brilho_controle
+        if not brilhos or any(f <= 0 or f == 1 for f in brilhos):
+            raise ValueError(
+                "Os fatores de brilho devem ser positivos e diferentes de 1."
+            )
+        recortes = self.recortes_controle
+        if not recortes or any(not 0 < r < 0.5 for r in recortes):
+            raise ValueError("Os recortes devem estar em (0, 0,5).")
+        if not 0 < self.cobertura_limiar_duplicatas <= 1:
+            raise ValueError("A cobertura do limiar deve estar em (0, 1].")
+        fracoes = (
+            self.fracao_maxima_grupo_duplicatas,
+            self.fracao_maxima_pares_duplicatas,
+        )
+        if any(not 0 < f < 1 for f in fracoes):
+            raise ValueError(
+                "As frações máximas de grupo e de pares devem estar em (0, 1)."
             )
 
 
