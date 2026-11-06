@@ -165,3 +165,31 @@ def test_regras_de_duplicatas_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_embeddings_dinov2_vit_s14_em_518_com_leitura_reduzida_em_4() -> None:
+    assert REGRAS.modelo_embeddings == "vit_small_patch14_dinov2.lvd142m"
+    assert REGRAS.lado_entrada_embeddings == 518
+    assert REGRAS.fator_leitura_embeddings == 4
+
+
+def test_grupo_com_densidade_de_50_por_cento_ou_mais_e_serie_real() -> None:
+    assert REGRAS.densidade_minima_serie == 0.5
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("modelo_embeddings", " ", "modelo"),
+        ("lado_entrada_embeddings", 0, "múltiplo de 14"),
+        ("lado_entrada_embeddings", 520, "múltiplo de 14"),
+        ("fator_leitura_embeddings", 0, "fator de leitura"),
+        ("densidade_minima_serie", 0.0, "densidade"),
+        ("densidade_minima_serie", 1.0, "densidade"),
+    ],
+)
+def test_regras_de_embeddings_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})

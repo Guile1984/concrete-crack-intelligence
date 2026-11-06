@@ -58,6 +58,16 @@ class RegrasPreRegistradas:
             tiver mais que esta fração das fotos.
         fracao_maxima_pares_duplicatas: O hash é reprovado se mais que esta
             fração dos pares de fotos reais ficar a distância <= limiar.
+        modelo_embeddings: Nome do modelo do timm que gera os embeddings
+            (DINOv2 ViT-S/14, pesos oficiais da Meta, licença Apache 2.0).
+        lado_entrada_embeddings: Lado da imagem quadrada na entrada da rede;
+            518 é a resolução nativa do modelo e precisa ser múltiplo do
+            patch de 14 pixels.
+        fator_leitura_embeddings: Redução das fotos na leitura para os
+            embeddings, antes do redimensionamento para a entrada da rede.
+        densidade_minima_serie: Densidade do maior grupo (ligações internas
+            dividido pelos pares possíveis) a partir da qual ele é declarado
+            série real; abaixo, corrente. Não muda a ação, só o que se declara.
     """
 
     proporcao_treino: float = 0.70
@@ -92,6 +102,10 @@ class RegrasPreRegistradas:
     cobertura_limiar_duplicatas: float = 0.95
     fracao_maxima_grupo_duplicatas: float = 0.10
     fracao_maxima_pares_duplicatas: float = 0.02
+    modelo_embeddings: str = "vit_small_patch14_dinov2.lvd142m"
+    lado_entrada_embeddings: int = 518
+    fator_leitura_embeddings: int = 4
+    densidade_minima_serie: float = 0.5
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -153,6 +167,19 @@ class RegrasPreRegistradas:
             raise ValueError(
                 "As frações máximas de grupo e de pares devem estar em (0, 1)."
             )
+        self._validar_embeddings()
+
+    def _validar_embeddings(self) -> None:
+        """Recusa regras de embeddings fora dos intervalos válidos."""
+        if not self.modelo_embeddings.strip():
+            raise ValueError("O nome do modelo de embeddings não pode ser vazio.")
+        lado = self.lado_entrada_embeddings
+        if lado < 14 or lado % 14 != 0:
+            raise ValueError("O lado da entrada deve ser múltiplo de 14 (o patch).")
+        if self.fator_leitura_embeddings < 1:
+            raise ValueError("O fator de leitura dos embeddings deve ser >= 1.")
+        if not 0 < self.densidade_minima_serie < 1:
+            raise ValueError("A densidade mínima de série deve estar em (0, 1).")
 
 
 REGRAS = RegrasPreRegistradas()
