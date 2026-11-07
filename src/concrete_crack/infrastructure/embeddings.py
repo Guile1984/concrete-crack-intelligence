@@ -2,15 +2,19 @@
 
 Único módulo do projeto que usa o timm. A rede recebe a imagem inteira,
 redimensionada para um quadrado sem corte e normalizada com a média e o desvio
-declarados pelo próprio modelo. O carregamento dos pesos pré-treinados, com
-conferência do hash, fica em outro passo; aqui a rede pode ser criada sem
-pesos, o que permite testar o formato sem baixar nada.
+declarados pelo próprio modelo. A rede pode ser criada sem pesos (para testar o
+formato sem baixar nada) ou com os pesos de um arquivo local, cujo SHA-256 é
+conferido antes do carregamento.
 """
+
+from pathlib import Path
 
 import numpy as np
 import timm
 import torch
 from torch.nn import functional
+
+from .arquivos import sha256_do_arquivo
 
 CANAIS_RGB = 3
 
@@ -93,6 +97,18 @@ class ExtratorEmbeddings:
         return saida[0].double().numpy()
 
 
+def _montar(modelo: torch.nn.Module, lado: int) -> ExtratorEmbeddings:
+    """Envolve a rede do timm no extrator, com a normalização declarada por ela."""
+    configuracao = modelo.pretrained_cfg
+    return ExtratorEmbeddings(
+        modelo,
+        lado,
+        tuple(configuracao["mean"]),
+        tuple(configuracao["std"]),
+        modelo.num_features,
+    )
+
+
 def criar_extrator(nome_modelo: str, lado: int) -> ExtratorEmbeddings:
     """Cria o extrator com a arquitetura do timm, ainda sem pesos pré-treinados.
 
@@ -106,11 +122,43 @@ def criar_extrator(nome_modelo: str, lado: int) -> ExtratorEmbeddings:
     modelo = timm.create_model(
         nome_modelo, pretrained=False, num_classes=0, img_size=lado
     )
-    configuracao = modelo.pretrained_cfg
-    return ExtratorEmbeddings(
-        modelo,
-        lado,
-        tuple(configuracao["mean"]),
-        tuple(configuracao["std"]),
-        modelo.num_features,
+    return _montar(modelo, lado)
+
+
+def criar_extrator_com_pesos(
+    nome_modelo: str, lado: int, caminho_pesos: Path, sha256_esperado: str
+) -> ExtratorEmbeddings:
+    """Cria o extrator com os pesos de um arquivo local, conferindo o hash antes.
+
+    O carregamento é estrito: se faltar ou sobrar qualquer parâmetro em relação
+    à arquitetura, ele falha, em vez de seguir com uma rede em parte aleatória.
+    Nada é baixado: o arquivo precisa já estar em disco.
+
+    Args:
+        nome_modelo: Nome do modelo no timm.
+        lado: Lado da imagem quadrada na entrada.
+        caminho_pesos: Arquivo de pesos (safetensors) em disco.
+        sha256_esperado: Hash registrado no manifesto dos pesos.
+
+    Returns:
+        O extrator com os pesos carregados.
+
+    Raises:
+        FileNotFoundError: Se o arquivo de pesos não existir.
+        ValueError: Se o hash do arquivo for diferente do esperado.
+        RuntimeError: Se os parâmetros do arquivo não corresponderem à rede.
+    """
+    obtido = sha256_do_arquivo(caminho_pesos)
+    if obtido != sha256_esperado:
+        raise ValueError(
+            f"O hash dos pesos não confere: esperado {sha256_esperado[:12]}, "
+            f"obtido {obtido[:12]}."
+        )
+    modelo = timm.create_model(
+        nome_modelo,
+        pretrained=True,
+        num_classes=0,
+        img_size=lado,
+        pretrained_cfg_overlay={"file": str(caminho_pesos)},
     )
+    return _montar(modelo, lado)

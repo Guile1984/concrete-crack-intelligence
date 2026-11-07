@@ -82,3 +82,64 @@ def test_imagens_diferentes_dao_vetores_diferentes(extrator) -> None:
 def test_entrada_que_nao_e_rgb_uint8_e_recusada(extrator, imagem) -> None:
     with pytest.raises(ValueError, match="uint8"):
         extrator.preparar(imagem)
+
+
+@pytest.fixture(scope="module")
+def pesos_salvos(tmp_path_factory):
+    """Grava os pesos de uma rede sem pré-treino e devolve (rede, arquivo)."""
+    import timm
+    import torch
+    from safetensors.torch import save_file
+
+    torch.manual_seed(0)
+    rede = timm.create_model(
+        REGRAS.modelo_embeddings,
+        pretrained=False,
+        num_classes=0,
+        img_size=REGRAS.lado_entrada_embeddings,
+    )
+    pasta = tmp_path_factory.mktemp("pesos")
+    estado = {nome: valor.contiguous() for nome, valor in rede.state_dict().items()}
+    save_file(estado, pasta / "model.safetensors")
+    return rede, pasta / "model.safetensors"
+
+
+def carregar(caminho, sha256):
+    from concrete_crack.infrastructure.embeddings import criar_extrator_com_pesos
+
+    return criar_extrator_com_pesos(
+        REGRAS.modelo_embeddings, REGRAS.lado_entrada_embeddings, caminho, sha256
+    )
+
+
+def test_pesos_do_arquivo_sao_carregados_inteiros(pesos_salvos) -> None:
+    import torch
+
+    from concrete_crack.infrastructure.arquivos import sha256_do_arquivo
+
+    rede, caminho = pesos_salvos
+    extrator = carregar(caminho, sha256_do_arquivo(caminho))
+    originais = rede.state_dict()
+    carregados = extrator.modelo.state_dict()
+    assert originais.keys() == carregados.keys()
+    assert all(torch.equal(originais[nome], carregados[nome]) for nome in originais)
+
+
+def test_hash_divergente_e_recusado_antes_de_carregar(pesos_salvos) -> None:
+    _, caminho = pesos_salvos
+    with pytest.raises(ValueError, match="hash dos pesos não confere"):
+        carregar(caminho, "0" * 64)
+
+
+def test_arquivo_com_parametro_faltando_e_recusado(pesos_salvos, tmp_path) -> None:
+    from safetensors.torch import load_file, save_file
+
+    from concrete_crack.infrastructure.arquivos import sha256_do_arquivo
+
+    _, caminho = pesos_salvos
+    estado = load_file(caminho)
+    del estado["norm.weight"]
+    incompleto = tmp_path / "incompleto.safetensors"
+    save_file(estado, incompleto)
+    with pytest.raises(RuntimeError, match="norm.weight"):
+        carregar(incompleto, sha256_do_arquivo(incompleto))
