@@ -1,0 +1,8 @@
+{
+  "repositorio": "timm/vit_small_patch14_dinov2.lvd142m",
+  "revisao": "4610ca143709d58a633b6397a74412c2c3842454",
+  "arquivo": "model.safetensors",
+  "tamanho_bytes": 88240510,
+  "sha256": "04d27f3400d059fc0cfd7d17dd1909a75bf3ea8fb3eeb48b97cb99e57ee20081",
+  "data_download": "2026-11-07"
+}
