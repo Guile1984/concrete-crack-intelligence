@@ -119,6 +119,9 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `7d1fcaa` | Manifesto dos pesos: `timm/vit_small_patch14_dinov2.lvd142m`, revisão `4610ca143709d58a633b6397a74412c2c3842454`, 88.240.510 bytes, SHA-256 `04d27f3400d059fc0cfd7d17dd1909a75bf3ea8fb3eeb48b97cb99e57ee20081` | download único; `conferir`: hash confere e a rede devolve 384 números; só o manifesto entrou no Git; CI verde |
 | `279441f` | Variações em cor, distância de cosseno, densidade do grupo e corte de série | 577 passed; com o corte estrito (`>` em vez de `>=`), falhou 1 teste (`test_serie_real_a_partir_do_corte_inclusive`) e 36 passaram; desfeito pelo Git; CI verde |
 | `a65c035` | Comando `duplicatas_embeddings` e árvore de decisão da A45 no domínio (A46) | 593 passed e 17 com torch; sem a pergunta (b), falharam 3 testes (`test_pares_demais_voltam_ao_dhash_mesmo_com_grupo_grande`, `test_fotos_todas_iguais_voltam_ao_dhash`, `test_relatorio_da_volta_ao_dhash`) e 13 passaram; desfeito pelo Git; CI verde |
+| `a336f8f` | Lição 1.10 registrada: embeddings aprovados (A46) e limitação de T | CI verde |
+| `b93054a` | Gravação dos grupos de quase-duplicatas conferida contra a A46 (registro com procedência, gravado uma única vez) | 606 passed e 17 com torch; sem a conferência contra a referência, falhou 1 teste (`test_execucao_que_nao_reproduz_a_referencia_e_recusada`, `DID NOT RAISE`) e 12 passaram; desfeito pelo Git; CI verde |
+| `60774f3` | `manifests/grupos_ccsd.json`: 451 grupos com 458 fotos (444 isoladas e 7 pares), da segunda execução, que reproduziu a A46 exatamente | 1.369 linhas, conferidas pela estrutura (444 x 3 + 7 x 4 + 9); CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -194,7 +197,7 @@ reaparecer, registrar aqui.
 - [x] Sprint 1: método de embeddings pré-registrado (A45): DINOv2 ViT-S/14 via timm, mesmo controle positivo e mesmos critérios de escalada
 - [x] Sprint 1: decidido, antes de rodar os embeddings, o que fazer com um grupo grande demais (A45: opção A, densidade com corte em 0,5, lacunas 1 e 2)
 - [x] Sprint 1, lição 1.10: embeddings implementados e medidos (A46): aprovados, 451 grupos (444 fotos isoladas e 7 pares)
-- [ ] Sprint 1: gravar os 451 grupos dos embeddings num arquivo versionado, para a divisão não depender de pequenas diferenças de ponto flutuante entre máquinas
+- [x] Sprint 1, lição 1.11: os 451 grupos dos embeddings estão gravados em `manifests/grupos_ccsd.json` (`60774f3`), conferidos contra a A46 antes da gravação
 - [ ] Sprint 1, opcional e só descritivo: distância de cada foto ao vizinho mais próximo, para dimensionar a limitação de T = 0,0050 (fixar antes de olhar que a decisão da A46 não muda)
 - [ ] Sprint 1: divisão por grupos (70/15/15, seed 20261022) com teste de vazamento
 - [ ] Sprint 1: ler e aceitar os termos de uso do S2DS antes do download
@@ -371,6 +374,8 @@ final do pytest, seção 4).
 **Resultado dos embeddings:** aprovados (A46), com 7 pares ligados e 451 grupos; a corrente de 136 fotos do dHash não se repetiu. A previsão feita antes de rodar acertou o JPEG e os brilhos abaixo de 0,01, os pares abaixo de 2% e o veredito, e errou por uma ordem de grandeza os recortes e o T (previ T entre 0,03 e 0,12; saiu 0,0050): a rede é bem mais insensível a recortes do que eu supunha. O T pequeno é o que define a limitação registrada na seção 6.
 
 **Divergências corrigidas na lição 1.10:** (1) a parte dos pesos foi dividida em duas (registro e carregamento; download), e a numeração das partes seguintes mudou em relação ao plano inicial. (2) Na 1.10f escrevi "seis arquivos" no Passo 1 e corrigi para cinco na mesma mensagem. (3) Na 1.10h, minha cópia de trabalho ainda tinha o exemplo antigo da docstring do limiar (0,95 x 200), já corrigido no repositório para 0,07 x 100; as alterações foram refeitas sobre os arquivos do repositório, conferidos por SHA-256, antes da entrega. (4) A previsão de T da execução errou por uma ordem de grandeza, como registrado acima.
+
+**Lição 1.11, primeira parte (grupos gravados):** a execução da A46 só imprimiu o resumo, e os grupos não tinham sido gravados. O comando `grupos` (`b93054a`) refaz a detecção e só grava se reproduzir os quatro números registrados (T com 4 casas, 7 pares, 451 grupos, maior grupo de 2). A segunda execução reproduziu tudo, o que mostra que a extração é determinística na máquina do Gui; em outra máquina, a conferência recusaria uma partição diferente em vez de gravá-la em silêncio. Suíte em 606 passed, mais 17 com torch.
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
