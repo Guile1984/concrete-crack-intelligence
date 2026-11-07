@@ -102,3 +102,16 @@ def pasta_modelos(raiz: Path) -> Path:
         O caminho de ``data/modelos``.
     """
     return raiz / "data" / "modelos"
+
+
+def caminho_grupos(raiz: Path, fonte_id: str) -> Path:
+    """Devolve o caminho do registro dos grupos de quase-duplicatas de uma fonte.
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte (por exemplo ccsd).
+
+    Returns:
+        O caminho de ``manifests/grupos_<fonte_id>.json``.
+    """
+    return raiz / "manifests" / f"grupos_{fonte_id}.json"
