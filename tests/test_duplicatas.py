@@ -7,10 +7,13 @@ from concrete_crack.domain.duplicatas import (
     Agrupamento,
     agrupar,
     avaliar_hash,
+    densidade_do_grupo,
     dhash_duplo,
     distancia_hamming,
+    e_serie_real,
     limiar_por_cobertura,
     matriz_de_distancias,
+    matriz_de_distancias_cosseno,
     reduzir_por_blocos,
 )
 
@@ -189,3 +192,82 @@ def test_pares_exatamente_no_limite_nao_reprovam_e_acima_reprovam() -> None:
     acima = avaliar_hash(agrupamento_com(2, 10, 3, 100), 0.5, 0.02)
     assert not no_limite.pares_demais
     assert acima.pares_demais and acima.reprovado
+
+
+def test_cosseno_de_direcoes_iguais_perpendiculares_e_opostas() -> None:
+    vetores = [np.array([1.0, 0.0]), np.array([3.0, 0.0]), np.array([0.0, 2.0])]
+    vetores.append(np.array([-1.0, 0.0]))
+    distancias = matriz_de_distancias_cosseno(vetores)
+    assert distancias[0, 1] == pytest.approx(0.0)
+    assert distancias[0, 2] == pytest.approx(1.0)
+    assert distancias[0, 3] == pytest.approx(2.0)
+
+
+def test_cosseno_e_simetrico_com_diagonal_zero_e_dentro_de_0_a_2() -> None:
+    rng = np.random.default_rng(0)
+    distancias = matriz_de_distancias_cosseno(list(rng.normal(size=(6, 384))))
+    assert np.array_equal(distancias, distancias.T)
+    assert not np.diag(distancias).any()
+    assert distancias.min() >= 0.0 and distancias.max() <= 2.0
+
+
+def test_cosseno_ignora_o_tamanho_do_vetor() -> None:
+    v = np.random.default_rng(1).normal(size=384)
+    assert matriz_de_distancias_cosseno([v, 5 * v])[0, 1] == pytest.approx(0.0)
+
+
+def test_cosseno_recusa_vetor_nulo_poucos_vetores_ou_formas_diferentes() -> None:
+    with pytest.raises(ValueError, match="nulo"):
+        matriz_de_distancias_cosseno([np.ones(3), np.zeros(3)])
+    with pytest.raises(ValueError, match="pelo menos 2"):
+        matriz_de_distancias_cosseno([np.ones(3)])
+    with pytest.raises(ValueError, match="forma"):
+        matriz_de_distancias_cosseno([np.ones(3), np.ones(4)])
+
+
+def test_limiar_por_cobertura_com_distancias_continuas() -> None:
+    distancias = [0.01 * i for i in range(1, 101)]
+    assert limiar_por_cobertura(distancias, 0.95) == pytest.approx(0.95)
+
+
+def test_agrupa_com_distancias_de_cosseno() -> None:
+    vetores = [np.array([1.0, 0.0]), np.array([0.99, 0.14]), np.array([0.0, 1.0])]
+    distancias = matriz_de_distancias_cosseno(vetores)
+    assert agrupar(distancias, 0.05).grupos == ((0, 1), (2,))
+
+
+def corrente(n: int) -> np.ndarray:
+    """Matriz em que cada imagem só é próxima (1) das vizinhas imediatas."""
+    indices = np.arange(n)
+    return np.where(np.abs(indices[:, None] - indices[None, :]) == 1, 1, 10)
+
+
+def test_densidade_de_uma_corrente_e_baixa() -> None:
+    distancias = corrente(10)
+    np.fill_diagonal(distancias, 0)
+    # 9 ligações entre vizinhos em 45 pares possíveis
+    assert densidade_do_grupo(distancias, range(10), 1) == pytest.approx(0.2)
+
+
+def test_densidade_de_uma_serie_e_total() -> None:
+    distancias = np.ones((5, 5))
+    np.fill_diagonal(distancias, 0)
+    assert densidade_do_grupo(distancias, [0, 1, 2, 3, 4], 1) == 1.0
+
+
+def test_densidade_conta_so_os_pares_dentro_do_grupo() -> None:
+    distancias = corrente(6)
+    np.fill_diagonal(distancias, 0)
+    # grupo {0, 1, 3}: só o par 0-1 é vizinho; 3 pares possíveis
+    assert densidade_do_grupo(distancias, [0, 1, 3], 1) == pytest.approx(1 / 3)
+
+
+def test_densidade_recusa_grupo_de_uma_imagem() -> None:
+    with pytest.raises(ValueError, match="pelo menos 2"):
+        densidade_do_grupo(np.zeros((3, 3)), [1], 1)
+
+
+def test_serie_real_a_partir_do_corte_inclusive() -> None:
+    assert e_serie_real(0.5, 0.5)
+    assert e_serie_real(0.9, 0.5)
+    assert not e_serie_real(0.49, 0.5)

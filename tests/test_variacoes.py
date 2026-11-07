@@ -75,7 +75,8 @@ def test_os_quatro_lados_sao_conhecidos() -> None:
 @pytest.mark.parametrize(
     ("cinza", "fracao", "lado", "trecho"),
     [
-        (np.zeros((4, 4, 3)), 0.10, "esquerda", "2D"),
+        (np.zeros(16), 0.10, "esquerda", "2D ou 3D"),
+        (np.zeros((4, 4, 3, 1)), 0.10, "esquerda", "2D ou 3D"),
         (imagem(), 0.0, "esquerda", "fração"),
         (imagem(), 0.5, "esquerda", "fração"),
         (imagem(), 0.10, "diagonal", "Lado"),
@@ -113,7 +114,8 @@ def test_qualidade_menor_perde_mais_informacao() -> None:
     ("cinza", "qualidade", "trecho"),
     [
         (np.zeros((4, 4), dtype=np.float64), 70, "uint8"),
-        (np.zeros((4, 4, 3), dtype=np.uint8), 70, "2D"),
+        (np.zeros((4, 4, 4), dtype=np.uint8), 70, "2D ou RGB"),
+        (np.zeros(16, dtype=np.uint8), 70, "2D ou RGB"),
         (np.zeros((4, 4), dtype=np.uint8), 0, "qualidade"),
         (np.zeros((4, 4), dtype=np.uint8), 96, "qualidade"),
     ],
@@ -123,3 +125,40 @@ def test_recompressao_recusa_entradas_invalidas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         recomprimir_jpeg(cinza, qualidade)
+
+
+def colorida(altura: int = 40, largura: int = 60) -> np.ndarray:
+    rng = np.random.default_rng(5)
+    return rng.integers(0, 256, (altura, largura, 3), dtype=np.uint8)
+
+
+def test_brilho_em_cor_multiplica_cada_canal() -> None:
+    pixel = np.array([[[100, 200, 20]]], dtype=np.uint8)
+    assert ajustar_brilho(pixel, 1.15).tolist() == [[[115, 230, 23]]]
+
+
+def test_recorte_em_cor_corta_linhas_e_colunas_e_mantem_os_canais() -> None:
+    imagem_rgb = colorida()
+    assert recortar(imagem_rgb, 0.10, "esquerda").shape == (40, 54, 3)
+    assert recortar(imagem_rgb, 0.10, "cima").shape == (36, 60, 3)
+    assert np.array_equal(recortar(imagem_rgb, 0.10, "direita"), imagem_rgb[:, :54])
+
+
+def test_recorte_em_cor_e_em_cinza_coincidem_canal_a_canal() -> None:
+    imagem_rgb = colorida()
+    recortada = recortar(imagem_rgb, 0.05, "baixo")
+    for canal in range(3):
+        cinza = np.ascontiguousarray(imagem_rgb[:, :, canal])
+        assert np.array_equal(recortada[:, :, canal], recortar(cinza, 0.05, "baixo"))
+
+
+def test_recompressao_em_cor_mantem_forma_e_altera_levemente() -> None:
+    suave = np.tile(np.linspace(0, 255, 64), (48, 1))
+    imagem_rgb = np.stack([suave, suave[::-1], np.full_like(suave, 128)], axis=2)
+    imagem_rgb = imagem_rgb.astype(np.uint8)
+    recomprimida = recomprimir_jpeg(imagem_rgb, 70)
+    assert recomprimida.shape == (48, 64, 3)
+    assert recomprimida.dtype == np.uint8
+    diferenca = np.abs(recomprimida.astype(int) - imagem_rgb.astype(int))
+    assert diferenca.any()
+    assert diferenca.mean() < 20

@@ -13,10 +13,11 @@ def ajustar_brilho(cinza: np.ndarray, fator: float) -> np.ndarray:
     """Multiplica o brilho de uma imagem, arredondando e saturando em 0 e 255.
 
     O arredondamento é o do numpy (``np.rint``): a metade vai para o par, de
-    modo que 8,5 vira 8 e 85,5 vira 86.
+    modo que 8,5 vira 8 e 85,5 vira 86. Vale para cinza e para cor: cada canal
+    é multiplicado pelo mesmo fator.
 
     Args:
-        cinza: Imagem uint8.
+        cinza: Imagem uint8, em tons de cinza ou colorida.
         fator: Fator de brilho, positivo.
 
     Returns:
@@ -38,10 +39,11 @@ def recortar(cinza: np.ndarray, fracao: float, lado: str) -> np.ndarray:
 
     A largura da faixa é ``round(fracao x dimensão)``: colunas para esquerda e
     direita, linhas para cima e baixo. O ``round`` do Python leva a metade para
-    o par (2,5 vira 2), como o ``np.rint``.
+    o par (2,5 vira 2), como o ``np.rint``. Numa imagem colorida, só os dois
+    primeiros eixos (linhas e colunas) são cortados; os canais ficam inteiros.
 
     Args:
-        cinza: Imagem 2D.
+        cinza: Imagem 2D (cinza) ou 3D (linhas x colunas x canais).
         fracao: Fração a remover, em (0, 0,5).
         lado: Um de ``LADOS``.
 
@@ -49,16 +51,16 @@ def recortar(cinza: np.ndarray, fracao: float, lado: str) -> np.ndarray:
         A imagem sem a faixa (uma cópia).
 
     Raises:
-        ValueError: Se a imagem não for 2D, a fração estiver fora de (0, 0,5),
-            o lado for desconhecido ou a faixa arredondar para zero.
+        ValueError: Se a imagem não for 2D nem 3D, a fração estiver fora de
+            (0, 0,5), o lado for desconhecido ou a faixa arredondar para zero.
     """
-    if cinza.ndim != 2:
-        raise ValueError("A imagem deve ser 2D.")
+    if cinza.ndim not in (2, 3):
+        raise ValueError("A imagem deve ser 2D ou 3D (com canais).")
     if not 0 < fracao < 0.5:
         raise ValueError("A fração do recorte deve estar em (0, 0,5).")
     if lado not in LADOS:
         raise ValueError(f"Lado desconhecido: {lado!r}.")
-    altura, largura = cinza.shape
+    altura, largura = cinza.shape[:2]
     dimensao = largura if lado in ("esquerda", "direita") else altura
     faixa = round(fracao * dimensao)
     if faixa == 0:

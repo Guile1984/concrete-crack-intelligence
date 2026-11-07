@@ -1,13 +1,15 @@
-"""Detecção de quase-duplicatas por dHash duplo e agrupamento por distância.
+"""Detecção de quase-duplicatas e agrupamento por distância.
 
 Funções puras sobre matrizes numpy, sem acesso a disco. Os parâmetros (lado do
 hash, cobertura, frações máximas) vêm de fora (``config/regras.py``).
 
-O dHash compara cada célula de uma versão muito reduzida da imagem com a
-vizinha: na direção horizontal (imagem reduzida a lado x (lado + 1)) e na
-vertical ((lado + 1) x lado). Cada comparação vira um bit, num total de
-2 x lado x lado bits. A distância entre duas imagens é a quantidade de bits
-diferentes (distância de Hamming).
+Duas medidas de distância convivem aqui. O dHash compara cada célula de uma
+versão muito reduzida da imagem com a vizinha: na direção horizontal (imagem
+reduzida a lado x (lado + 1)) e na vertical ((lado + 1) x lado); cada
+comparação vira um bit, e a distância é a quantidade de bits diferentes
+(Hamming, inteira). Os embeddings de uma rede são comparados pela distância de
+cosseno, 1 menos o cosseno do ângulo entre os vetores (contínua, de 0 a 2). O
+limiar, o agrupamento e o critério de escalada valem para as duas.
 """
 
 import math
@@ -94,15 +96,17 @@ def distancia_hamming(a: np.ndarray, b: np.ndarray) -> int:
     return int(np.count_nonzero(a != b))
 
 
-def limiar_por_cobertura(distancias: Sequence[int], cobertura: float) -> int:
-    """Encontra o menor limiar inteiro que reconhece a fração pedida das distâncias.
+def limiar_por_cobertura(distancias: Sequence[float], cobertura: float) -> float:
+    """Encontra o menor limiar que reconhece a fração pedida das distâncias.
 
-    O limiar T é o menor inteiro tal que pelo menos ``cobertura`` das distâncias
-    satisfazem d <= T. Uma tolerância de 1e-9 evita que um produto como
-    0,07 x 100 = 7,000000000000001 exija uma distância a mais.
+    O limiar T é a menor distância observada tal que pelo menos ``cobertura``
+    das distâncias satisfazem d <= T. Com distâncias inteiras (Hamming), T é
+    inteiro; com distâncias contínuas (cosseno), T é uma das distâncias. Uma
+    tolerância de 1e-9 evita que um produto como 0,07 x 100 = 7,000000000000001
+    exija uma distância a mais.
 
     Args:
-        distancias: Distâncias do controle positivo (inteiros >= 0), não vazias.
+        distancias: Distâncias do controle positivo (>= 0), não vazias.
         cobertura: Fração em (0, 1].
 
     Returns:
@@ -175,7 +179,7 @@ class Agrupamento:
         return self.pares_ligados / self.total_pares
 
 
-def agrupar(distancias: np.ndarray, limiar: int) -> Agrupamento:
+def agrupar(distancias: np.ndarray, limiar: float) -> Agrupamento:
     """Agrupa as imagens ligadas, direta ou indiretamente, por distância <= limiar.
 
     Se A está ligada a B e B a C, as três ficam no mesmo grupo, mesmo que A e C
@@ -259,3 +263,76 @@ def avaliar_hash(
     grande = agrupamento.maior_grupo > fracao_maxima_grupo * agrupamento.n_imagens
     pares = agrupamento.fracao_pares_ligados > fracao_maxima_pares
     return AvaliacaoHash(grande, pares)
+
+
+def matriz_de_distancias_cosseno(vetores: Sequence[np.ndarray]) -> np.ndarray:
+    """Calcula a distância de cosseno entre todos os pares de vetores.
+
+    A distância é 1 menos o cosseno do ângulo entre os vetores: 0 para a mesma
+    direção, 1 para direções perpendiculares e 2 para opostas. A matriz sai
+    exatamente simétrica, com zeros na diagonal.
+
+    Args:
+        vetores: Vetores de mesma dimensão, pelo menos 2, nenhum nulo.
+
+    Returns:
+        Matriz float64 n x n, com valores de 0 a 2.
+
+    Raises:
+        ValueError: Se houver menos de 2 vetores, formas diferentes ou algum
+            vetor nulo.
+    """
+    if len(vetores) < 2:
+        raise ValueError("São necessários pelo menos 2 vetores.")
+    if len({v.shape for v in vetores}) != 1:
+        raise ValueError("Os vetores devem ter a mesma forma.")
+    matriz = np.stack(vetores).astype(np.float64)
+    normas = np.linalg.norm(matriz, axis=1)
+    if not normas.all():
+        raise ValueError("Há um vetor nulo: o cosseno não é definido.")
+    unitarios = matriz / normas[:, None]
+    distancias = np.clip(1.0 - unitarios @ unitarios.T, 0.0, 2.0)
+    distancias = (distancias + distancias.T) / 2
+    np.fill_diagonal(distancias, 0.0)
+    return distancias
+
+
+def densidade_do_grupo(
+    distancias: np.ndarray, grupo: Sequence[int], limiar: float
+) -> float:
+    """Calcula a fração dos pares de um grupo ligados diretamente (d <= limiar).
+
+    Numa série real, quase todos se parecem com quase todos (densidade perto de
+    1); numa corrente, cada imagem se liga a poucas (densidade perto de 0).
+
+    Args:
+        distancias: Matriz n x n de distâncias.
+        grupo: Índices das imagens do grupo, pelo menos 2.
+        limiar: Distância máxima para uma ligação.
+
+    Returns:
+        Ligações internas divididas pelos pares possíveis, de 0 a 1.
+
+    Raises:
+        ValueError: Se o grupo tiver menos de 2 imagens.
+    """
+    if len(grupo) < 2:
+        raise ValueError("A densidade exige um grupo com pelo menos 2 imagens.")
+    indices = np.asarray(grupo)
+    internas = distancias[np.ix_(indices, indices)]
+    ligacoes = int(np.count_nonzero(np.triu(internas <= limiar, k=1)))
+    possiveis = len(indices) * (len(indices) - 1) // 2
+    return ligacoes / possiveis
+
+
+def e_serie_real(densidade: float, densidade_minima: float) -> bool:
+    """Diz se um grupo é declarado série real (densidade >= mínima) ou corrente.
+
+    Args:
+        densidade: Densidade do grupo, de 0 a 1.
+        densidade_minima: Corte pré-registrado.
+
+    Returns:
+        Verdadeiro para série real; falso para corrente.
+    """
+    return densidade >= densidade_minima
