@@ -23,6 +23,7 @@ SO_EM: dict[str, set[str]] = {
     "torchvision": {"infrastructure"},
     "matplotlib": {"presentation", "services"},
     "pandas": {"presentation", "services"},
+    "timm": {"infrastructure"},
 }
 
 # Substitutos de "o domínio não acessa disco nem rede". É uma aproximação:
