@@ -24,6 +24,7 @@ SO_EM: dict[str, set[str]] = {
     "matplotlib": {"presentation", "services"},
     "pandas": {"presentation", "services"},
     "timm": {"infrastructure"},
+    "huggingface_hub": {"infrastructure"},
 }
 
 # Substitutos de "o domínio não acessa disco nem rede". É uma aproximação:

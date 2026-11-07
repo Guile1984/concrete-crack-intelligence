@@ -78,3 +78,27 @@ def caminho_vereditos_inspecao(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``manifests/vereditos_inspecao_<fonte_id>.json``.
     """
     return raiz / "manifests" / f"vereditos_inspecao_{fonte_id}.json"
+
+
+def caminho_manifesto_pesos(raiz: Path) -> Path:
+    """Devolve o caminho do manifesto dos pesos da rede de embeddings.
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``manifests/pesos_embeddings.json``.
+    """
+    return raiz / "manifests" / "pesos_embeddings.json"
+
+
+def pasta_modelos(raiz: Path) -> Path:
+    """Devolve a pasta dos pesos de redes pré-treinadas (fora do Git).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``data/modelos``.
+    """
+    return raiz / "data" / "modelos"
