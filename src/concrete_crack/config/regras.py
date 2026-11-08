@@ -68,6 +68,15 @@ class RegrasPreRegistradas:
         densidade_minima_serie: Densidade do maior grupo (ligações internas
             dividido pelos pares possíveis) a partir da qual ele é declarado
             série real; abaixo, corrente. Não muda a ação, só o que se declara.
+        multiplos_faixas_vizinho: Limites das faixas de distância ao vizinho
+            mais próximo, como múltiplos do limiar T (análise descritiva).
+        multiplos_sensibilidade_limiar: Múltiplos de T em que se descreve como
+            o agrupamento ficaria; nenhum deles é uma opção de limiar.
+        multiplo_quase_ligadas: Uma foto é "quase ligada" se o vizinho mais
+            próximo estiver acima de T e até este múltiplo de T.
+        fracao_maxima_quase_ligadas: A limitação de T é declarada relevante se
+            mais que esta fração das fotos estiver quase ligada. Não muda a
+            decisão da A46, só o que se declara.
     """
 
     proporcao_treino: float = 0.70
@@ -106,6 +115,10 @@ class RegrasPreRegistradas:
     lado_entrada_embeddings: int = 518
     fator_leitura_embeddings: int = 4
     densidade_minima_serie: float = 0.5
+    multiplos_faixas_vizinho: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0, 20.0)
+    multiplos_sensibilidade_limiar: tuple[float, ...] = (2.0, 5.0)
+    multiplo_quase_ligadas: float = 2.0
+    fracao_maxima_quase_ligadas: float = 0.05
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -180,6 +193,24 @@ class RegrasPreRegistradas:
             raise ValueError("O fator de leitura dos embeddings deve ser >= 1.")
         if not 0 < self.densidade_minima_serie < 1:
             raise ValueError("A densidade mínima de série deve estar em (0, 1).")
+        self._validar_vizinhos()
+
+    def _validar_vizinhos(self) -> None:
+        """Recusa regras da análise de vizinhos fora dos intervalos válidos."""
+        faixas = self.multiplos_faixas_vizinho
+        if not faixas or faixas[0] != 1.0 or list(faixas) != sorted(set(faixas)):
+            raise ValueError(
+                "As faixas de vizinho devem começar em 1 e ser crescentes."
+            )
+        sensibilidade = self.multiplos_sensibilidade_limiar
+        if not sensibilidade or any(m <= 1 for m in sensibilidade):
+            raise ValueError("Os múltiplos de sensibilidade devem ser maiores que 1.")
+        if self.multiplo_quase_ligadas not in faixas[1:]:
+            raise ValueError(
+                "O múltiplo de quase ligadas deve ser uma das faixas acima de 1."
+            )
+        if not 0 < self.fracao_maxima_quase_ligadas < 1:
+            raise ValueError("A fração máxima de quase ligadas deve estar em (0, 1).")
 
 
 REGRAS = RegrasPreRegistradas()

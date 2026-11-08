@@ -193,3 +193,34 @@ def test_regras_de_embeddings_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_faixas_de_vizinho_em_1_2_5_10_e_20_vezes_t() -> None:
+    assert REGRAS.multiplos_faixas_vizinho == (1.0, 2.0, 5.0, 10.0, 20.0)
+    assert REGRAS.multiplos_sensibilidade_limiar == (2.0, 5.0)
+
+
+def test_limitacao_relevante_com_mais_de_5_por_cento_ate_2t() -> None:
+    assert REGRAS.multiplo_quase_ligadas == 2.0
+    assert REGRAS.fracao_maxima_quase_ligadas == 0.05
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("multiplos_faixas_vizinho", (), "faixas"),
+        ("multiplos_faixas_vizinho", (2.0, 5.0), "faixas"),
+        ("multiplos_faixas_vizinho", (1.0, 5.0, 2.0), "faixas"),
+        ("multiplos_sensibilidade_limiar", (), "sensibilidade"),
+        ("multiplos_sensibilidade_limiar", (1.0,), "sensibilidade"),
+        ("multiplo_quase_ligadas", 3.0, "quase ligadas"),
+        ("multiplo_quase_ligadas", 1.0, "quase ligadas"),
+        ("fracao_maxima_quase_ligadas", 0.0, "quase ligadas"),
+        ("fracao_maxima_quase_ligadas", 1.0, "quase ligadas"),
+    ],
+)
+def test_regras_da_analise_de_vizinhos_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})
