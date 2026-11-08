@@ -7,6 +7,7 @@ from concrete_crack.domain.vizinhos import (
     contar_por_faixas,
     distancias_ao_vizinho_mais_proximo,
     limitacao_relevante,
+    pares_na_faixa,
     quantis,
     quase_ligadas,
 )
@@ -61,3 +62,15 @@ def test_quase_ligadas_ficam_acima_de_t_e_ate_2t() -> None:
 def test_limitacao_relevante_a_partir_de_23_em_458() -> None:
     assert not limitacao_relevante(22, 458, 0.05)
     assert limitacao_relevante(23, 458, 0.05)
+
+
+def test_pares_na_faixa_excluem_o_limite_de_baixo_e_incluem_o_de_cima() -> None:
+    distancias = np.array(
+        [
+            [0.0, 0.005, 0.006, 0.010],
+            [0.005, 0.0, 0.011, 0.2],
+            [0.006, 0.011, 0.0, 0.007],
+            [0.010, 0.2, 0.007, 0.0],
+        ]
+    )
+    assert pares_na_faixa(distancias, 0.005, 0.010) == [(0, 2), (0, 3), (2, 3)]

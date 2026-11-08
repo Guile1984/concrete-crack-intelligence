@@ -115,3 +115,16 @@ def caminho_grupos(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``manifests/grupos_<fonte_id>.json``.
     """
     return raiz / "manifests" / f"grupos_{fonte_id}.json"
+
+
+def caminho_quase_ligadas(raiz: Path, fonte_id: str) -> Path:
+    """Devolve o caminho do registro dos pares quase ligados de uma fonte.
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte (por exemplo ccsd).
+
+    Returns:
+        O caminho de ``manifests/quase_ligadas_<fonte_id>.json``.
+    """
+    return raiz / "manifests" / f"quase_ligadas_{fonte_id}.json"

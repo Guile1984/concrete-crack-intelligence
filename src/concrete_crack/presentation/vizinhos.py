@@ -17,6 +17,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+
 from ..config.caminhos import (
     caminho_grupos,
     caminho_manifesto_arquivos,
@@ -25,6 +27,7 @@ from ..config.caminhos import (
 )
 from ..config.regras import REGRAS
 from ..domain.duplicatas import agrupar, matriz_de_distancias_cosseno
+from ..domain.grupos import RegistroGrupos
 from ..domain.orientacao import aplicar_orientacao
 from ..domain.vizinhos import (
     contar_por_faixas,
@@ -87,13 +90,32 @@ class ResultadoVizinhos:
     sensibilidade: tuple[Sensibilidade, ...]
 
 
-def analisar_vizinhos(
+@dataclass(frozen=True, slots=True, eq=False)
+class MatrizConferida:
+    """Os vetores das fotos, já conferidos contra os grupos gravados.
+
+    Attributes:
+        fotos: As fotos, na ordem das linhas da matriz.
+        matriz: Distâncias de cosseno entre todas as fotos.
+        registro: O registro de grupos que forneceu o T.
+    """
+
+    fotos: tuple[str, ...]
+    matriz: np.ndarray
+    registro: RegistroGrupos
+
+
+def matriz_conferida(
     raiz: Path,
     fonte_id: str,
     extrator: Extrator | None = None,
     progresso: Callable[[int, int], None] | None = None,
-) -> ResultadoVizinhos:
-    """Mede a distância de cada foto ao vizinho mais próximo, conforme a A47.
+) -> MatrizConferida:
+    """Refaz a matriz de distâncias e confere que ela reproduz os grupos gravados.
+
+    Antes de extrair, confere que o manifesto de arquivos, os pesos e as fotos
+    são os da gravação dos grupos; depois, que o agrupamento em T reproduz
+    exatamente os grupos gravados.
 
     Args:
         raiz: Raiz do projeto.
@@ -102,7 +124,7 @@ def analisar_vizinhos(
         progresso: Função chamada com (fotos lidas, total).
 
     Returns:
-        O resultado descritivo.
+        As fotos, a matriz e o registro de grupos.
 
     Raises:
         FileNotFoundError: Se faltar algum manifesto, foto ou arquivo de pesos.
@@ -139,12 +161,40 @@ def analisar_vizinhos(
         if progresso is not None:
             progresso(numero, len(fotos))
     matriz = matriz_de_distancias_cosseno(vetores)
-    limiar = registro.limiar
     refeitos = {
-        frozenset(fotos[i] for i in grupo) for grupo in agrupar(matriz, limiar).grupos
+        frozenset(fotos[i] for i in grupo)
+        for grupo in agrupar(matriz, registro.limiar).grupos
     }
     if refeitos != gravados:
         raise ValueError("O agrupamento em T não reproduz os grupos gravados.")
+    return MatrizConferida(tuple(fotos), matriz, registro)
+
+
+def analisar_vizinhos(
+    raiz: Path,
+    fonte_id: str,
+    extrator: Extrator | None = None,
+    progresso: Callable[[int, int], None] | None = None,
+) -> ResultadoVizinhos:
+    """Mede a distância de cada foto ao vizinho mais próximo, conforme a A47.
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte, com grupos gravados.
+        extrator: Extrator de embeddings; None usa o DINOv2 com pesos conferidos.
+        progresso: Função chamada com (fotos lidas, total).
+
+    Returns:
+        O resultado descritivo.
+
+    Raises:
+        FileNotFoundError: Se faltar algum manifesto, foto ou arquivo de pesos.
+        ValueError: Se as conferências de ``matriz_conferida`` falharem.
+    """
+    conferida = matriz_conferida(raiz, fonte_id, extrator, progresso)
+    fotos = conferida.fotos
+    matriz = conferida.matriz
+    limiar = conferida.registro.limiar
     vizinhos = distancias_ao_vizinho_mais_proximo(matriz)
     limites = [m * limiar for m in REGRAS.multiplos_faixas_vizinho]
     n_quase = quase_ligadas(vizinhos, limiar, REGRAS.multiplo_quase_ligadas)
