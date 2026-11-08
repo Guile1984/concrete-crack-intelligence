@@ -1,0 +1,36 @@
+{
+  "fonte_id": "ccsd",
+  "sha256_grupos": "bd046b980247f8e5a61dab993ca992a00e20a9e8241f8c586fa3ff85b60d8dfc",
+  "limiar": 0.0049901035516849435,
+  "multiplo": 2.0,
+  "pares": [
+    [
+      "rgb/098.jpg",
+      "rgb/100.jpg"
+    ],
+    [
+      "rgb/260.jpg",
+      "rgb/500.JPG"
+    ],
+    [
+      "rgb/420.JPG",
+      "rgb/421.JPG"
+    ],
+    [
+      "rgb/455.JPG",
+      "rgb/456.JPG"
+    ],
+    [
+      "rgb/534.JPG",
+      "rgb/536.JPG"
+    ],
+    [
+      "rgb/548.JPG",
+      "rgb/549.JPG"
+    ],
+    [
+      "rgb/595.JPG",
+      "rgb/596.JPG"
+    ]
+  ]
+}
