@@ -12,6 +12,8 @@ import hashlib
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from .pesos import PADRAO_SHA256
+
 TREINO = "treino"
 VALIDACAO = "validacao"
 TESTE = "teste"
@@ -138,3 +140,38 @@ def dividir_por_grupos(
     return Divisao(
         tuple(sorted(treino)), tuple(sorted(validacao)), tuple(sorted(teste))
     )
+
+
+@dataclass(frozen=True, slots=True)
+class RegistroDivisao:
+    """A divisão gravada e a procedência dela.
+
+    Attributes:
+        fonte_id: Identificador da fonte.
+        seed: Semente do sorteio.
+        proporcoes: (treino, validação, teste) pré-registradas.
+        sha256_grupos: Hash do registro de grupos sorteado.
+        sha256_manifesto: Hash do manifesto de arquivos da fonte.
+        divisao: As fotos de cada conjunto.
+    """
+
+    fonte_id: str
+    seed: int
+    proporcoes: tuple[float, float, float]
+    sha256_grupos: str
+    sha256_manifesto: str
+    divisao: Divisao
+
+    def __post_init__(self) -> None:
+        """Recusa registros mal formados ou com uma foto em dois conjuntos."""
+        if not self.fonte_id:
+            raise ValueError("A fonte não pode ser vazia.")
+        for valor in (self.sha256_grupos, self.sha256_manifesto):
+            if not PADRAO_SHA256.fullmatch(valor):
+                raise ValueError("Os hashes devem ter 64 hexadecimais minúsculos.")
+        if abs(sum(self.proporcoes) - 1.0) > 1e-9:
+            raise ValueError("As proporções devem somar 1.")
+        conjuntos = (self.divisao.treino, self.divisao.validacao, self.divisao.teste)
+        fotos = [foto for conjunto in conjuntos for foto in conjunto]
+        if len(fotos) != len(set(fotos)):
+            raise ValueError("Uma foto aparece em mais de um conjunto.")

@@ -128,3 +128,15 @@ def caminho_quase_ligadas(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``manifests/quase_ligadas_<fonte_id>.json``.
     """
     return raiz / "manifests" / f"quase_ligadas_{fonte_id}.json"
+
+
+def caminho_split(raiz: Path) -> Path:
+    """Devolve o caminho do registro da divisão do CCSD (versão 1).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``manifests/split_v1.json``.
+    """
+    return raiz / "manifests" / "split_v1.json"
