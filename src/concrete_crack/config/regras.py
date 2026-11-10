@@ -77,6 +77,17 @@ class RegrasPreRegistradas:
         fracao_maxima_quase_ligadas: A limitação de T é declarada relevante se
             mais que esta fração das fotos estiver quase ligada. Não muda a
             decisão da A46, só o que se declara.
+        lado_tile_nativo: Lado do tile quadrado na escala nativa, em pixels;
+            múltiplo de 32 para caber nas reduções da U-Net.
+        fator_escala_reduzida: Fator de redução da foto inteira na segunda
+            escala (média de área), antes do recorte.
+        lado_tile_reduzido: Lado do tile na escala reduzida; cobre a mesma
+            área da foto que o tile nativo (lado nativo / fator), para que a
+            comparação entre escalas mude só a resolução.
+        regras_mascara_reduzida: Regras de volta ao binário da máscara
+            reduzida que a medição descritiva compara: "maioria" (fração de
+            fissura >= 0,5) e "qualquer" (fração > 0). A escolha é da Sprint
+            4a, antes do experimento de resolução.
     """
 
     proporcao_treino: float = 0.70
@@ -119,6 +130,10 @@ class RegrasPreRegistradas:
     multiplos_sensibilidade_limiar: tuple[float, ...] = (2.0, 5.0)
     multiplo_quase_ligadas: float = 2.0
     fracao_maxima_quase_ligadas: float = 0.05
+    lado_tile_nativo: int = 512
+    fator_escala_reduzida: int = 2
+    lado_tile_reduzido: int = 256
+    regras_mascara_reduzida: tuple[str, ...] = ("maioria", "qualquer")
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -211,6 +226,29 @@ class RegrasPreRegistradas:
             )
         if not 0 < self.fracao_maxima_quase_ligadas < 1:
             raise ValueError("A fração máxima de quase ligadas deve estar em (0, 1).")
+        self._validar_tiles()
+
+    def _validar_tiles(self) -> None:
+        """Recusa regras de tiles fora dos intervalos válidos."""
+        for lado in (self.lado_tile_nativo, self.lado_tile_reduzido):
+            if lado < 32 or lado % 32 != 0:
+                raise ValueError("O lado do tile deve ser múltiplo de 32.")
+        if self.fator_escala_reduzida < 2:
+            raise ValueError("O fator da escala reduzida deve ser >= 2.")
+        if (
+            self.lado_tile_reduzido * self.fator_escala_reduzida
+            != self.lado_tile_nativo
+        ):
+            raise ValueError(
+                "O tile reduzido deve cobrir a mesma área da foto que o nativo."
+            )
+        regras = self.regras_mascara_reduzida
+        validas = {"maioria", "qualquer", "suave"}
+        if not regras or len(set(regras)) != len(regras) or not set(regras) <= validas:
+            raise ValueError(
+                "As regras da máscara reduzida devem ser distintas, entre "
+                "maioria, qualquer e suave."
+            )
 
 
 REGRAS = RegrasPreRegistradas()

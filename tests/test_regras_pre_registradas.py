@@ -224,3 +224,31 @@ def test_regras_da_analise_de_vizinhos_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_tiles_de_512_na_escala_nativa_e_256_na_reduzida_2x() -> None:
+    assert REGRAS.lado_tile_nativo == 512
+    assert REGRAS.fator_escala_reduzida == 2
+    assert REGRAS.lado_tile_reduzido == 256
+
+
+def test_mede_as_regras_maioria_e_qualquer_da_mascara_reduzida() -> None:
+    assert REGRAS.regras_mascara_reduzida == ("maioria", "qualquer")
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("lado_tile_nativo", 500, "múltiplo de 32"),
+        ("lado_tile_reduzido", 128, "mesma área"),
+        ("fator_escala_reduzida", 1, "fator"),
+        ("regras_mascara_reduzida", (), "regras da máscara"),
+        ("regras_mascara_reduzida", ("maioria", "maioria"), "regras da máscara"),
+        ("regras_mascara_reduzida", ("media",), "regras da máscara"),
+    ],
+)
+def test_regras_de_tiles_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})
