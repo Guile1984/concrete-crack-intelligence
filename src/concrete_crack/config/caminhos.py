@@ -140,3 +140,15 @@ def caminho_split(raiz: Path) -> Path:
         O caminho de ``manifests/split_v1.json``.
     """
     return raiz / "manifests" / "split_v1.json"
+
+
+def caminho_indice_tiles(raiz: Path) -> Path:
+    """Devolve o caminho do índice de tiles do CCSD (versão 1).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``manifests/tiles_v1.json``.
+    """
+    return raiz / "manifests" / "tiles_v1.json"
