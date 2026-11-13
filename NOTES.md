@@ -161,7 +161,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `e1078b4` | Manifesto de hashes dos pixels por foto e escala, com a versão do Pillow (A54) | 805 passed; sem comparar a máscara, falharam 2 testes e 9 passaram; desfeito pelo Git; CI verde |
 | `03493fd` | Comando `tiles`, registrar ou conferir os hashes, commitado antes de rodar nos dados | 813 passed; com a conferência desligada, falhou 1 teste (`DID NOT RAISE`) e 7 passaram; desfeito pelo Git; CI verde |
 | `d6cba6f` | `manifests/pixels_tiles_v1.json`: 1.832 hashes, Pillow 13.0.0, SHA-256 `f8c093b38963` | 465 linhas, como previsto; a segunda execução conferiu os 1.832 hashes; CI verde |
-| `XXXXXXX` | Auditoria do manifesto de pixels no CI (`tests/test_pixels_tiles_v1.py`, 5 testes) | 818 passed; com a versão do Pillow editada à mão no manifesto, falhou 1 teste e 4 passaram, inclusive o byte a byte; desfeito pelo Git; CI verde |
+| `3b974eb` | Auditoria do manifesto de pixels no CI (`tests/test_pixels_tiles_v1.py`, 5 testes) | 818 passed; com a versão do Pillow editada à mão no manifesto, falhou 1 teste e 4 passaram, inclusive o byte a byte; desfeito pelo Git; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
