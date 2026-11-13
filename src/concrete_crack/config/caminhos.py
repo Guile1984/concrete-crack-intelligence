@@ -152,3 +152,28 @@ def caminho_indice_tiles(raiz: Path) -> Path:
         O caminho de ``manifests/tiles_v1.json``.
     """
     return raiz / "manifests" / "tiles_v1.json"
+
+
+def caminho_manifesto_pixels(raiz: Path) -> Path:
+    """Devolve o caminho do manifesto de hashes dos pixels dos tiles (versão 1).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``manifests/pixels_tiles_v1.json``.
+    """
+    return raiz / "manifests" / "pixels_tiles_v1.json"
+
+
+def pasta_tiles(raiz: Path, fonte_id: str) -> Path:
+    """Devolve a pasta dos tiles gerados de uma fonte (derivados, fora do Git).
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte.
+
+    Returns:
+        O caminho de ``data/interim/tiles_<fonte_id>``.
+    """
+    return raiz / "data" / "interim" / f"tiles_{fonte_id}"
