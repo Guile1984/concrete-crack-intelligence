@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import numpy as np
+import PIL
 from PIL import Image
 
 from ..domain.dimensoes import Cabecalho
@@ -109,3 +110,12 @@ def gravar_png(caminho: Path, imagem: np.ndarray) -> None:
         raise ValueError("A imagem precisa ser uint8.")
     caminho.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(imagem).save(caminho, format="PNG")
+
+
+def versao_pillow() -> str:
+    """Devolve a versão do Pillow que decodifica as imagens (A54, escolha C).
+
+    Returns:
+        A versão, por exemplo ``"12.0.0"``.
+    """
+    return PIL.__version__
