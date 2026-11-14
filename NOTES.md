@@ -259,7 +259,7 @@ reaparecer, registrar aqui.
 - [x] Correção duradoura para a pasta temporária do pytest (A24)
 - [x] Sprint 1, lição 1.8: binarização das máscaras do CCSD para o treino decidida e medida: desvio do fundo, resolução cheia, limiar 128; binarização ROBUSTA (razão 1,000) e 0 máscaras anômalas nas 458 (A41 e A42)
 - [ ] Sprint 2: tratar o desbalanceamento de classes (cerca de 72 pixels de fundo por pixel de fissura) na escolha da função de perda
-- [ ] Sprint 1, lição 1.14: medir a sobrevivência das fissuras finas na escala 2× (A52, item 8b), só no treino
+- [x] Sprint 1, lição 1.14: sobrevivência das fissuras finas na escala 2× medida no rótulo, em área (A56); a continuidade dos trechos finos fica para a Sprint 4a
 - [ ] Sprint 1: decidir o destino de `data/raw/_tentativas/` (evidência do download truncado) ao fim da sprint
 - [x] Sprint 1, lição 1.13: teste que trava o manifesto real do CCSD no CI (`ab8feb4`): 917 entradas, hash do RAR e hash do próprio manifesto
 - [ ] Opcional: relatar ao Mendeley que o Download All entrega o RAR truncado
