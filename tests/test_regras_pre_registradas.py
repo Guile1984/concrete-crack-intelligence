@@ -252,3 +252,38 @@ def test_regras_de_tiles_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_cores_do_s2ds_identificadas_pelas_contagens_do_treino() -> None:
+    assert dict(REGRAS.cores_classes_s2ds) == {
+        "fundo": (0, 0, 0),
+        "fissura": (255, 255, 255),
+        "desplacamento": (255, 0, 0),
+        "corrosao": (255, 255, 0),
+        "eflorescencia": (0, 255, 255),
+        "vegetacao": (0, 255, 0),
+        "ponto_de_controle": (0, 0, 255),
+    }
+
+
+def test_fissura_do_s2ds_e_o_branco_e_o_alfa_e_255() -> None:
+    assert REGRAS.classe_fissura_s2ds == "fissura"
+    assert dict(REGRAS.cores_classes_s2ds)["fissura"] == (255, 255, 255)
+    assert REGRAS.alfa_rotulos_s2ds == 255
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("cores_classes_s2ds", (("a", (0, 0, 0)), ("b", (0, 0, 0))), "distintas"),
+        ("cores_classes_s2ds", (("a", (0, 0, 0)), ("a", (1, 1, 1))), "distintas"),
+        ("cores_classes_s2ds", (("fissura", (256, 0, 0)),), "canais"),
+        ("classe_fissura_s2ds", "rachadura", "classe de fissura"),
+        ("alfa_rotulos_s2ds", 300, "alfa"),
+    ],
+)
+def test_regras_do_s2ds_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})

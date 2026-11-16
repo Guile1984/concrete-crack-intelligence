@@ -88,6 +88,13 @@ class RegrasPreRegistradas:
             reduzida que a medição descritiva compara: "maioria" (fração de
             fissura >= 0,5) e "qualquer" (fração > 0). A escolha é da Sprint
             4a, antes do experimento de resolução.
+        cores_classes_s2ds: Cor RGB de cada classe nos rótulos do S2DS,
+            identificada pelas contagens de imagens e pixels do treino
+            publicadas no README (A58).
+        classe_fissura_s2ds: Classe que vira fissura na binarização do S2DS;
+            todas as outras viram fundo.
+        alfa_rotulos_s2ds: Valor do canal alfa exigido em todo pixel dos
+            rótulos do S2DS; outro valor faz a binarização recusar o rótulo.
     """
 
     proporcao_treino: float = 0.70
@@ -134,6 +141,17 @@ class RegrasPreRegistradas:
     fator_escala_reduzida: int = 2
     lado_tile_reduzido: int = 256
     regras_mascara_reduzida: tuple[str, ...] = ("maioria", "qualquer")
+    cores_classes_s2ds: tuple[tuple[str, tuple[int, int, int]], ...] = (
+        ("fundo", (0, 0, 0)),
+        ("fissura", (255, 255, 255)),
+        ("desplacamento", (255, 0, 0)),
+        ("corrosao", (255, 255, 0)),
+        ("eflorescencia", (0, 255, 255)),
+        ("vegetacao", (0, 255, 0)),
+        ("ponto_de_controle", (0, 0, 255)),
+    )
+    classe_fissura_s2ds: str = "fissura"
+    alfa_rotulos_s2ds: int = 255
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -249,6 +267,20 @@ class RegrasPreRegistradas:
                 "As regras da máscara reduzida devem ser distintas, entre "
                 "maioria, qualquer e suave."
             )
+        self._validar_s2ds()
+
+    def _validar_s2ds(self) -> None:
+        """Recusa um mapa de cores do S2DS ambíguo ou incompleto."""
+        nomes = [nome for nome, _ in self.cores_classes_s2ds]
+        cores = [cor for _, cor in self.cores_classes_s2ds]
+        if len(set(nomes)) != len(nomes) or len(set(cores)) != len(cores):
+            raise ValueError("As classes e as cores do S2DS devem ser distintas.")
+        if any(not 0 <= canal <= 255 for cor in cores for canal in cor):
+            raise ValueError("Os canais das cores do S2DS devem estar em [0, 255].")
+        if self.classe_fissura_s2ds not in nomes:
+            raise ValueError("A classe de fissura do S2DS deve estar no mapa.")
+        if not 0 <= self.alfa_rotulos_s2ds <= 255:
+            raise ValueError("O alfa dos rótulos do S2DS deve estar em [0, 255].")
 
 
 REGRAS = RegrasPreRegistradas()
