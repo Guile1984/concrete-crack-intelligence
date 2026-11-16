@@ -119,3 +119,23 @@ def versao_pillow() -> str:
         A versão, por exemplo ``"12.0.0"``.
     """
     return PIL.__version__
+
+
+def ler_rgba(caminho: Path) -> np.ndarray:
+    """Lê uma imagem RGBA em resolução cheia, sem conversão de modo.
+
+    Args:
+        caminho: Arquivo de imagem.
+
+    Returns:
+        Matriz uint8 de forma (altura, largura, 4).
+
+    Raises:
+        FileNotFoundError: Se o arquivo não existir.
+        OSError: Se o arquivo não for uma imagem reconhecida.
+        ValueError: Se a imagem não estiver no modo RGBA.
+    """
+    with Image.open(caminho) as imagem:
+        if imagem.mode != "RGBA":
+            raise ValueError(f"{caminho}: modo {imagem.mode}, esperado RGBA.")
+        return np.array(imagem)
