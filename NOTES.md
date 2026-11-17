@@ -181,6 +181,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `4689756` | Comando de conferência dos rótulos do S2DS com o README, commitado antes de rodar | 851 passed; com o índice do fundo no lugar do da fissura, falharam 4 testes (recusa em `train/2_lab.png` pela conferência dos brancos) e 1 passou; desfeito pelo Git; CI verde |
 | `462b181` | NOTES: binarização do S2DS conferida com o README (A59), lição 1.15 concluída | 7 linhas inseridas (a linha em branco contada) e 1 removida, como previsto; CI verde |
 | `2053184` | NOTES: pré-registro do tratamento da foto-mãe do S2DS (A60), antes de qualquer inspeção | 1 linha inserida, como previsto; CI verde |
+| `378dcb3` | NOTES: foto-mãe do S2DS não identificável pelos metadados (A61) | 4 linhas inseridas, como previsto; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
@@ -273,12 +274,12 @@ reaparecer, registrar aqui.
 - [ ] Sprint 7: decidir se os checkpoints serão publicados
 - [ ] Sprint 7: acrescentar ao README um resumo executivo (o que a ferramenta faz, o que não faz e quanto confiar nela), ao lado da seção técnica, sem linguagem de diagnóstico (R10) e sem milímetros (R11)
 - [ ] Sprint 7: avaliar fixar as ações do CI por hash de commit e congelar um `pip freeze`
-- [ ] Conferir se o `ruff` instalado pelo pip está na mesma versão do hook; a autoridade é o hook (A17)
+- [x] `ruff` instalado pelo pip conferido em 2026-11-17: 0.17.1, a mesma versão do hook (A17)
 - [x] Correção duradoura para a pasta temporária do pytest (A24)
 - [x] Sprint 1, lição 1.8: binarização das máscaras do CCSD para o treino decidida e medida: desvio do fundo, resolução cheia, limiar 128; binarização ROBUSTA (razão 1,000) e 0 máscaras anômalas nas 458 (A41 e A42)
 - [ ] Sprint 2: tratar o desbalanceamento de classes (cerca de 72 pixels de fundo por pixel de fissura) na escolha da função de perda
 - [x] Sprint 1, lição 1.14: sobrevivência das fissuras finas na escala 2× medida no rótulo, em área (A56); a continuidade dos trechos finos fica para a Sprint 4a
-- [ ] Sprint 1: decidir o destino de `data/raw/_tentativas/` (evidência do download truncado) ao fim da sprint
+- [x] Sprint 1: `data/raw/_tentativas/` (1,4 GB, fora do Git e de qualquer manifesto) fica guardada até a Sprint 7, junto com a decisão opcional de relatar o RAR truncado ao Mendeley; a evidência já está documentada nos achados da aquisição do CCSD
 - [x] Sprint 1, lição 1.13: teste que trava o manifesto real do CCSD no CI (`ab8feb4`): 917 entradas, hash do RAR e hash do próprio manifesto
 - [ ] Opcional: relatar ao Mendeley que o Download All entrega o RAR truncado
 - [x] Sprint 1, lição 1.7: ferramenta, sessão de julgamento e resultado concluídos; CCSD aprovado, 0 inadequadas em 40 (A40). As 40 imagens continuam em `data/interim/inspecao_ccsd/` (derivadas, fora do Git)
