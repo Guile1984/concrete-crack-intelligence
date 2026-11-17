@@ -268,7 +268,7 @@ reaparecer, registrar aqui.
 - [x] Sprint 1, lição 1.15: binarização do S2DS conforme a A58, conferida com o README nos 743 rótulos, sem divergência (A59)
 - [ ] Sprint 5: confirmar que o atalho do S2DS no Drive foi criado e que o Colab o lê (A57)
 - [ ] Sprint 5: bootstrap principal por imagem no S2DS, com a limitação declarada, e sensibilidade com grupos DINOv2 em 1T, 2T e 5T; ler as imagens como RGB (A60, A61)
-- [ ] Sprint 1, condicional: confirmar licença e download parcial do CiF
+- [x] Sprint 1, condicional: CiF não necessário, porque o S2DS foi adquirido e conferido sem divergência (A59)
 - [ ] Sprint 2: decidir onde mora o ajuste do Frangi (recomendação: serviço próprio de busca em grade)
 - [ ] Sprint 3: a sonda escolhe L4 ou T4 e confirma a runtime ativa do Colab
 - [ ] Sprint 7: decidir se os checkpoints serão publicados
@@ -358,7 +358,7 @@ Ruff limpo, pre-commit protegendo cada commit.
 **Divergências corrigidas durante a sprint:** nome de teste com erro de grafia
 (`clcdice`, corrigido para `cldice`); contagem de arquivos do Ruff (item 5 acima).
 
-## 9. Sprint 1: Dados (em andamento)
+## 9. Sprint 1: Dados (concluída em 2026-11-17)
 
 **Fontes consultadas em 2026-10-27**
 
@@ -479,3 +479,17 @@ final do pytest, seção 4).
 
 **Dica operacional:** o `git log` abre um pager que pode prender o terminal do VS Code;
 usar `git --no-pager log --oneline -n 5`.
+
+## 10. Fechamento da Sprint 1 (2026-11-17)
+
+**Gates do ARQUITETURA:** nenhum grupo cruza conjuntos (`split_v1.json` por grupos, A49 e A50, auditado no CI por `test_split_v1.py`; os tiles herdam o conjunto, auditados por `test_tiles_v1.py`); distribuição de fissuras por conjunto reportada (A51); decisão sobre o CCSD registrada (A40, aprovado). Além disso: binarização das máscaras (A41 e A42), quase-duplicatas por dHash e embeddings (A43 a A48), tiles com índice, pixels conferidos por hash e medição descritiva (A52 a A56), S2DS adquirido, binarizado e conferido (A57 a A59) e tratamento da foto-mãe do S2DS (A60 e A61). Suíte: de 33 testes no fim da Sprint 0 para 851, mais 17 com torch; 36 decisões datadas (A26 a A61).
+
+**Lições aprendidas**
+
+1. Medir antes de decidir, com a leitura fixada antes de ver o dado, funcionou em todas as análises descritivas (A47 e A48, A50, A51, A56, A60 e A61); nenhuma decisão foi revista depois de ver o resultado, inclusive quando ele foi desconfortável (dHash reprovado, A44).
+2. Todo guarda-corpo foi provado falhando de propósito, e dois gates ensinaram limites de testes: um total pode não detectar um erro (uma grade deitada tem o mesmo número de tiles), e o teste byte a byte só detecta mudança de formato, não de conteúdo; os dois casos pedem testes de conteúdo ao lado.
+3. Os erros de previsão do Claude têm padrão: subestimou duas vezes a proximidade das fotos do CCSD no DINOv2 (A46, A48), supôs fissuras mais finas do que são (A56) e errou tamanhos de arquivo por ignorar o formato (JPEG no CCSD, PNG no S2DS). O registro de cada erro tornou o padrão visível.
+4. Dá para descobrir um formato sem olhar imagens, casando contagens com uma fonte publicada independente (as cores do S2DS pela tabela do README, A58), o que preservou a regra de que só o Gui julga imagens (A33).
+5. O repositório é a fonte da verdade, não a conversa: com a compactação do contexto, as saídas dos gates de `3ffe08c` e `75c265b` se perderam, mas tudo o que estava no NOTES e nos testes sobreviveu; desde então, cada saída de gate vai para o NOTES na mesma sessão.
+6. Nada de marcadores provisórios no NOTES: um `XXXXXXX` no lugar de um hash sobreviveu a um commit (`7b2f5ac`); desde então, a linha só é escrita depois de o hash existir.
+7. A partir da lição 1.14m, cada teoria termina com uma analogia, a pedido do Gui, e cada analogia diz onde falha.
