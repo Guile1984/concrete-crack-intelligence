@@ -95,6 +95,15 @@ class RegrasPreRegistradas:
             todas as outras viram fundo.
         alfa_rotulos_s2ds: Valor do canal alfa exigido em todo pixel dos
             rótulos do S2DS; outro valor faz a binarização recusar o rótulo.
+        n_reamostragens_bootstrap: Reamostragens do bootstrap pareado que dá
+            o intervalo de confiança das diferenças entre métodos (A62).
+        nivel_confianca_bootstrap: Nível do intervalo percentil do bootstrap.
+        seed_bootstrap: Semente das reamostragens do bootstrap.
+        metodo_esqueleto: Método do ``skeletonize`` do scikit-image usado no
+            clDice; fixado porque o padrão pode mudar entre versões.
+        unidades_bootstrap: Unidade sorteada no bootstrap, por fonte: no CCSD,
+            o grupo de quase-duplicatas (A49), para as fotos de um grupo
+            entrarem juntas; no S2DS, a imagem (A61).
     """
 
     proporcao_treino: float = 0.70
@@ -152,6 +161,14 @@ class RegrasPreRegistradas:
     )
     classe_fissura_s2ds: str = "fissura"
     alfa_rotulos_s2ds: int = 255
+    n_reamostragens_bootstrap: int = 10_000
+    nivel_confianca_bootstrap: float = 0.95
+    seed_bootstrap: int = 20261117
+    metodo_esqueleto: str = "zhang"
+    unidades_bootstrap: tuple[tuple[str, str], ...] = (
+        ("ccsd", "grupo"),
+        ("s2ds", "imagem"),
+    )
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -281,6 +298,27 @@ class RegrasPreRegistradas:
             raise ValueError("A classe de fissura do S2DS deve estar no mapa.")
         if not 0 <= self.alfa_rotulos_s2ds <= 255:
             raise ValueError("O alfa dos rótulos do S2DS deve estar em [0, 255].")
+        self._validar_metricas()
+
+    def _validar_metricas(self) -> None:
+        """Recusa regras de métricas e de bootstrap fora dos valores válidos."""
+        if self.n_reamostragens_bootstrap < 1000:
+            raise ValueError("O bootstrap precisa de pelo menos 1000 reamostragens.")
+        if not 0 < self.nivel_confianca_bootstrap < 1:
+            raise ValueError("O nível de confiança deve estar em (0, 1).")
+        if self.metodo_esqueleto not in {"zhang", "lee"}:
+            raise ValueError("O método do esqueleto deve ser zhang ou lee.")
+        fontes = [fonte for fonte, _ in self.unidades_bootstrap]
+        unidades = {unidade for _, unidade in self.unidades_bootstrap}
+        if (
+            not fontes
+            or len(set(fontes)) != len(fontes)
+            or not unidades <= {"grupo", "imagem"}
+        ):
+            raise ValueError(
+                "As unidades do bootstrap devem ter fontes distintas e ser "
+                "grupo ou imagem."
+            )
 
 
 REGRAS = RegrasPreRegistradas()

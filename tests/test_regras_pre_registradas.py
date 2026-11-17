@@ -287,3 +287,39 @@ def test_regras_do_s2ds_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_bootstrap_com_10000_reamostragens_e_intervalo_de_95_por_cento() -> None:
+    assert REGRAS.n_reamostragens_bootstrap == 10_000
+    assert REGRAS.nivel_confianca_bootstrap == 0.95
+
+
+def test_seed_do_bootstrap_fixa_e_propria() -> None:
+    assert REGRAS.seed_bootstrap == 20261117
+    assert REGRAS.seed_bootstrap != REGRAS.seed_split
+
+
+def test_esqueleto_do_cldice_pelo_metodo_de_zhang() -> None:
+    assert REGRAS.metodo_esqueleto == "zhang"
+
+
+def test_bootstrap_sorteia_grupos_no_ccsd_e_imagens_no_s2ds() -> None:
+    assert dict(REGRAS.unidades_bootstrap) == {"ccsd": "grupo", "s2ds": "imagem"}
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("n_reamostragens_bootstrap", 999, "reamostragens"),
+        ("nivel_confianca_bootstrap", 0.0, "nível"),
+        ("nivel_confianca_bootstrap", 1.0, "nível"),
+        ("metodo_esqueleto", "medial", "esqueleto"),
+        ("unidades_bootstrap", (("ccsd", "grupo"), ("ccsd", "imagem")), "unidades"),
+        ("unidades_bootstrap", (("ccsd", "foto"),), "unidades"),
+    ],
+)
+def test_regras_de_metricas_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})
