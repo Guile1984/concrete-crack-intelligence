@@ -185,6 +185,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `378dcb3` | NOTES: foto-mãe do S2DS não identificável pelos metadados (A61) | 4 linhas inseridas, como previsto; CI verde |
 | `ae30351` | NOTES: arrumações da Sprint 1 (`_tentativas` guardada até a Sprint 7, `ruff` alinhado ao hook) | 3 linhas inseridas e 2 removidas, como previsto; CI verde |
 | `cd36b68` | NOTES: fechamento da Sprint 1 com os gates e as 7 lições aprendidas | 16 linhas inseridas e 2 removidas, como previsto; CI verde |
+| `d4ac9f1` | Pré-registro das métricas e do bootstrap (A62): 5 regras com travas e o texto no NOTES, antes de qualquer código de métricas | 861 passed; com a unidade do CCSD trocada para imagem, falhou 1 teste e 90 passaram; desfeito pelo Git; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
