@@ -3,11 +3,15 @@
 Funções puras sobre máscaras booleanas, sem disco. As métricas saem das
 quatro contagens de pixels; quando a divisão seria 0/0, o resultado é
 ``None`` (indefinido), e a imagem sai da média daquela métrica (A62, item 4).
+O clDice sai dos esqueletos, em duas camadas: a fórmula recebe esqueletos
+prontos, e o esqueleto real vem do ``skeletonize`` do scikit-image (A62,
+itens 3 e 9).
 """
 
 from dataclasses import dataclass
 
 import numpy as np
+from skimage.morphology import skeletonize
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +41,17 @@ class Contagens:
         return self.vp + self.fp + self.fn + self.vn
 
 
+def _conferir_mascaras(previsao: np.ndarray, gabarito: np.ndarray) -> None:
+    """Recusa máscaras que não sejam booleanas ou que tenham formatos diferentes."""
+    if previsao.dtype != np.bool_ or gabarito.dtype != np.bool_:
+        raise ValueError("As máscaras devem ser booleanas.")
+    if previsao.shape != gabarito.shape:
+        raise ValueError(
+            f"Formatos diferentes: previsão {previsao.shape}, "
+            f"gabarito {gabarito.shape}."
+        )
+
+
 def contar(previsao: np.ndarray, gabarito: np.ndarray) -> Contagens:
     """Conta VP, FP, FN e VN de uma previsão contra o gabarito.
 
@@ -51,13 +66,7 @@ def contar(previsao: np.ndarray, gabarito: np.ndarray) -> Contagens:
         ValueError: Se alguma máscara não for booleana ou os formatos forem
             diferentes.
     """
-    if previsao.dtype != np.bool_ or gabarito.dtype != np.bool_:
-        raise ValueError("As máscaras devem ser booleanas.")
-    if previsao.shape != gabarito.shape:
-        raise ValueError(
-            f"Formatos diferentes: previsão {previsao.shape}, "
-            f"gabarito {gabarito.shape}."
-        )
+    _conferir_mascaras(previsao, gabarito)
     vp = int(np.count_nonzero(previsao & gabarito))
     fp = int(np.count_nonzero(previsao & ~gabarito))
     fn = int(np.count_nonzero(~previsao & gabarito))
@@ -106,3 +115,90 @@ def acuracia(contagens: Contagens) -> float:
         (VP + VN) / total.
     """
     return (contagens.vp + contagens.vn) / contagens.total
+
+
+def _conferir_esqueleto(mascara: np.ndarray, esqueleto: np.ndarray, de: str) -> None:
+    """Recusa um esqueleto incompatível com a máscara de que ele foi tirado."""
+    if esqueleto.dtype != np.bool_ or esqueleto.shape != mascara.shape:
+        raise ValueError(f"O esqueleto {de} deve ser booleano e do formato da máscara.")
+    if np.any(esqueleto & ~mascara):
+        raise ValueError(f"O esqueleto {de} sai da máscara.")
+    if esqueleto.any() != mascara.any():
+        raise ValueError(f"O esqueleto {de} só pode ser vazio se a máscara for.")
+
+
+def cldice_de_esqueletos(
+    previsao: np.ndarray,
+    gabarito: np.ndarray,
+    esqueleto_previsao: np.ndarray,
+    esqueleto_gabarito: np.ndarray,
+) -> float | None:
+    """Calcula o clDice a partir de esqueletos prontos (a fórmula, sem algoritmo).
+
+    Tprec = |S_P ∩ V_L| / |S_P| e Tsens = |S_L ∩ V_P| / |S_L|; o clDice é a
+    média harmônica das duas, calculada com uma única divisão de inteiros:
+    2 n_p n_s / (n_p d_s + n_s d_p).
+
+    Args:
+        previsao: Máscara booleana prevista (V_P).
+        gabarito: Máscara booleana do gabarito (V_L).
+        esqueleto_previsao: Esqueleto da previsão (S_P), dentro dela.
+        esqueleto_gabarito: Esqueleto do gabarito (S_L), dentro dele.
+
+    Returns:
+        O clDice; ``None`` se o gabarito não tem fissura, e 0 se a previsão é
+        vazia (A62, item 4).
+
+    Raises:
+        ValueError: Se as máscaras ou os esqueletos forem incompatíveis.
+    """
+    _conferir_mascaras(previsao, gabarito)
+    _conferir_esqueleto(previsao, esqueleto_previsao, "da previsão")
+    _conferir_esqueleto(gabarito, esqueleto_gabarito, "do gabarito")
+    if not gabarito.any():
+        return None
+    if not previsao.any():
+        return 0.0
+    n_p = int(np.count_nonzero(esqueleto_previsao & gabarito))
+    d_p = int(np.count_nonzero(esqueleto_previsao))
+    n_s = int(np.count_nonzero(esqueleto_gabarito & previsao))
+    d_s = int(np.count_nonzero(esqueleto_gabarito))
+    if n_p == 0 and n_s == 0:
+        return 0.0
+    return 2 * n_p * n_s / (n_p * d_s + n_s * d_p)
+
+
+def esqueleto(mascara: np.ndarray, metodo: str) -> np.ndarray:
+    """Esqueleto de uma máscara pelo ``skeletonize`` do scikit-image.
+
+    Args:
+        mascara: Máscara booleana.
+        metodo: ``"zhang"`` ou ``"lee"``; o projeto usa o da A62, em
+            ``REGRAS.metodo_esqueleto``, sem valor padrão aqui.
+
+    Returns:
+        O esqueleto, booleano e do formato da máscara.
+
+    Raises:
+        ValueError: Se a máscara não for booleana.
+    """
+    if mascara.dtype != np.bool_:
+        raise ValueError("A máscara deve ser booleana.")
+    return skeletonize(mascara, method=metodo)
+
+
+def cldice(previsao: np.ndarray, gabarito: np.ndarray, metodo: str) -> float | None:
+    """Calcula o clDice com os esqueletos reais das duas máscaras.
+
+    Args:
+        previsao: Máscara booleana prevista.
+        gabarito: Máscara booleana do gabarito.
+        metodo: Método do esqueleto (``REGRAS.metodo_esqueleto``).
+
+    Returns:
+        O clDice, com as mesmas regras de :func:`cldice_de_esqueletos`.
+    """
+    _conferir_mascaras(previsao, gabarito)
+    return cldice_de_esqueletos(
+        previsao, gabarito, esqueleto(previsao, metodo), esqueleto(gabarito, metodo)
+    )
