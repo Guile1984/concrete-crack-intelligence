@@ -3,9 +3,10 @@
 Funções puras sobre máscaras booleanas, sem disco. As métricas saem das
 quatro contagens de pixels; quando a divisão seria 0/0, o resultado é
 ``None`` (indefinido), e a imagem sai da média daquela métrica (A62, item 4).
-O clDice sai dos esqueletos, em duas camadas: a fórmula recebe esqueletos
-prontos, e o esqueleto real vem do ``skeletonize`` do scikit-image (A62,
-itens 3 e 9).
+O clDice sai de quatro contagens dos esqueletos, em duas camadas: a fórmula
+recebe esqueletos prontos, e o esqueleto real vem do ``skeletonize`` do
+scikit-image (A62, itens 3 e 9). As contagens, e não só o valor, são o que a
+soma global do clDice precisa (A62, item 5).
 """
 
 from dataclasses import dataclass
@@ -127,17 +128,37 @@ def _conferir_esqueleto(mascara: np.ndarray, esqueleto: np.ndarray, de: str) -> 
         raise ValueError(f"O esqueleto {de} só pode ser vazio se a máscara for.")
 
 
-def cldice_de_esqueletos(
+@dataclass(frozen=True, slots=True)
+class ContagensEsqueleto:
+    """As quatro contagens de que o clDice de uma imagem é feito.
+
+    Attributes:
+        n_p: Pixels do esqueleto da previsão dentro do gabarito (S_P ∩ V_L).
+        d_p: Pixels do esqueleto da previsão (S_P).
+        n_s: Pixels do esqueleto do gabarito dentro da previsão (S_L ∩ V_P).
+        d_s: Pixels do esqueleto do gabarito (S_L).
+    """
+
+    n_p: int
+    d_p: int
+    n_s: int
+    d_s: int
+
+    def __post_init__(self) -> None:
+        """Recusa contagens que nenhum par de esqueletos produziria."""
+        if not (0 <= self.n_p <= self.d_p and 0 <= self.n_s <= self.d_s):
+            raise ValueError("Cada parte deve estar entre 0 e o seu esqueleto.")
+        if (self.d_p == 0 and self.n_s > 0) or (self.d_s == 0 and self.n_p > 0):
+            raise ValueError("Um esqueleto vazio não pode ter sobreposição.")
+
+
+def contar_esqueletos(
     previsao: np.ndarray,
     gabarito: np.ndarray,
     esqueleto_previsao: np.ndarray,
     esqueleto_gabarito: np.ndarray,
-) -> float | None:
-    """Calcula o clDice a partir de esqueletos prontos (a fórmula, sem algoritmo).
-
-    Tprec = |S_P ∩ V_L| / |S_P| e Tsens = |S_L ∩ V_P| / |S_L|; o clDice é a
-    média harmônica das duas, calculada com uma única divisão de inteiros:
-    2 n_p n_s / (n_p d_s + n_s d_p).
+) -> ContagensEsqueleto:
+    """Conta as partes do clDice a partir de esqueletos prontos.
 
     Args:
         previsao: Máscara booleana prevista (V_P).
@@ -146,8 +167,7 @@ def cldice_de_esqueletos(
         esqueleto_gabarito: Esqueleto do gabarito (S_L), dentro dele.
 
     Returns:
-        O clDice; ``None`` se o gabarito não tem fissura, e 0 se a previsão é
-        vazia (A62, item 4).
+        As quatro contagens.
 
     Raises:
         ValueError: Se as máscaras ou os esqueletos forem incompatíveis.
@@ -155,17 +175,50 @@ def cldice_de_esqueletos(
     _conferir_mascaras(previsao, gabarito)
     _conferir_esqueleto(previsao, esqueleto_previsao, "da previsão")
     _conferir_esqueleto(gabarito, esqueleto_gabarito, "do gabarito")
-    if not gabarito.any():
+    return ContagensEsqueleto(
+        n_p=int(np.count_nonzero(esqueleto_previsao & gabarito)),
+        d_p=int(np.count_nonzero(esqueleto_previsao)),
+        n_s=int(np.count_nonzero(esqueleto_gabarito & previsao)),
+        d_s=int(np.count_nonzero(esqueleto_gabarito)),
+    )
+
+
+def cldice_de_contagens(contagens: ContagensEsqueleto) -> float | None:
+    """Calcula o clDice a partir das quatro contagens dos esqueletos.
+
+    Tprec = n_p / d_p e Tsens = n_s / d_s; o clDice é a média harmônica das
+    duas, calculada com uma única divisão de inteiros:
+    2 n_p n_s / (n_p d_s + n_s d_p).
+
+    Returns:
+        O clDice; ``None`` se o gabarito não tem fissura (d_s = 0), e 0 se
+        nada se sobrepõe, o que inclui a previsão vazia (A62, item 4).
+    """
+    c = contagens
+    if c.d_s == 0:
         return None
-    if not previsao.any():
+    if c.n_p == 0 and c.n_s == 0:
         return 0.0
-    n_p = int(np.count_nonzero(esqueleto_previsao & gabarito))
-    d_p = int(np.count_nonzero(esqueleto_previsao))
-    n_s = int(np.count_nonzero(esqueleto_gabarito & previsao))
-    d_s = int(np.count_nonzero(esqueleto_gabarito))
-    if n_p == 0 and n_s == 0:
-        return 0.0
-    return 2 * n_p * n_s / (n_p * d_s + n_s * d_p)
+    return 2 * c.n_p * c.n_s / (c.n_p * c.d_s + c.n_s * c.d_p)
+
+
+def cldice_de_esqueletos(
+    previsao: np.ndarray,
+    gabarito: np.ndarray,
+    esqueleto_previsao: np.ndarray,
+    esqueleto_gabarito: np.ndarray,
+) -> float | None:
+    """Calcula o clDice a partir de esqueletos prontos (a fórmula, sem algoritmo).
+
+    Returns:
+        O clDice, com as regras de :func:`cldice_de_contagens`.
+
+    Raises:
+        ValueError: Se as máscaras ou os esqueletos forem incompatíveis.
+    """
+    return cldice_de_contagens(
+        contar_esqueletos(previsao, gabarito, esqueleto_previsao, esqueleto_gabarito)
+    )
 
 
 def esqueleto(mascara: np.ndarray, metodo: str) -> np.ndarray:
@@ -187,6 +240,25 @@ def esqueleto(mascara: np.ndarray, metodo: str) -> np.ndarray:
     return skeletonize(mascara, method=metodo)
 
 
+def contar_esqueletos_reais(
+    previsao: np.ndarray, gabarito: np.ndarray, metodo: str
+) -> ContagensEsqueleto:
+    """Conta as partes do clDice com os esqueletos reais das duas máscaras.
+
+    Args:
+        previsao: Máscara booleana prevista.
+        gabarito: Máscara booleana do gabarito.
+        metodo: Método do esqueleto (``REGRAS.metodo_esqueleto``).
+
+    Returns:
+        As quatro contagens.
+    """
+    _conferir_mascaras(previsao, gabarito)
+    return contar_esqueletos(
+        previsao, gabarito, esqueleto(previsao, metodo), esqueleto(gabarito, metodo)
+    )
+
+
 def cldice(previsao: np.ndarray, gabarito: np.ndarray, metodo: str) -> float | None:
     """Calcula o clDice com os esqueletos reais das duas máscaras.
 
@@ -196,9 +268,6 @@ def cldice(previsao: np.ndarray, gabarito: np.ndarray, metodo: str) -> float | N
         metodo: Método do esqueleto (``REGRAS.metodo_esqueleto``).
 
     Returns:
-        O clDice, com as mesmas regras de :func:`cldice_de_esqueletos`.
+        O clDice, com as regras de :func:`cldice_de_contagens`.
     """
-    _conferir_mascaras(previsao, gabarito)
-    return cldice_de_esqueletos(
-        previsao, gabarito, esqueleto(previsao, metodo), esqueleto(gabarito, metodo)
-    )
+    return cldice_de_contagens(contar_esqueletos_reais(previsao, gabarito, metodo))

@@ -189,6 +189,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `d4ac9f1` | Pré-registro das métricas e do bootstrap (A62): 5 regras com travas e o texto no NOTES, antes de qualquer código de métricas | 861 passed; com a unidade do CCSD trocada para imagem, falhou 1 teste e 90 passaram; desfeito pelo Git; CI verde |
 | `8f6f399` | Domínio das métricas de uma imagem: contagens, precisão, recall, Dice e acurácia, com indefinido explícito (`None`) (A62) | 873 passed; com o Dice trocado pelo IoU, falharam 6 testes e 6 passaram; desfeito pelo Git; CI verde |
 | `8143ea4` | clDice em duas camadas: fórmula com esqueletos prontos e esqueleto de Zhang com valores travados (156/157, 0 e 1); validação das máscaras extraída para `_conferir_mascaras` (A62) | 886 passed; com a média harmônica trocada pela aritmética, falharam 3 testes (2/3 virou 0,75; 156/157 virou 157/158; 0 virou 1/158) e 10 passaram; desfeito pelo Git; CI verde |
+| `58a87a8` | NOTES: recorte único das métricas de segmentação (A63), antes do código de agregação | 2 linhas inseridas, como previsto; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
