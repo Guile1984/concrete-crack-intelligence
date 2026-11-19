@@ -191,6 +191,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `8143ea4` | clDice em duas camadas: fórmula com esqueletos prontos e esqueleto de Zhang com valores travados (156/157, 0 e 1); validação das máscaras extraída para `_conferir_mascaras` (A62) | 886 passed; com a média harmônica trocada pela aritmética, falharam 3 testes (2/3 virou 0,75; 156/157 virou 157/158; 0 virou 1/158) e 10 passaram; desfeito pelo Git; CI verde |
 | `58a87a8` | NOTES: recorte único das métricas de segmentação (A63), antes do código de agregação | 2 linhas inseridas, como previsto; CI verde |
 | `51d5e7d` | Agregação por imagem e global no recorte da A63 (`domain/agregacao.py`), com as contagens de esqueleto somáveis (`ContagensEsqueleto`, `cldice_de_contagens`) (A62) | 903 passed; sem o recorte da A63, falharam 2 testes e 6 passaram; desfeito pelo Git; CI verde |
+| `0b701ce` | Bootstrap pareado por grupos e regra do critério 1 (`domain/bootstrap.py`): média por imagem das diferenças, grupos sorteados inteiros, quantil linear do numpy (a A62 não fixava a interpolação; com B = 10.000 a escolha fica entre dois vizinhos ordenados), desigualdade estrita no zero (A62, itens 6 e 7) | 919 passed; sorteando imagens soltas, falharam 2 testes (razão de larguras 1,0; grupo único de 0,1 a 0,5) e 14 passaram; desfeito pelo Git; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
