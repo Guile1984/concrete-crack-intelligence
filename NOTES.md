@@ -197,6 +197,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `1436c0a` | Avaliação de uma imagem (`avaliar_imagem`), preditor trivial "tudo é fundo" e acurácia global como linha de base (`domain/avaliacao.py`) (A62, item 8) | 925 passed; com o trivial prevendo tudo como fissura, falharam 2 testes e 4 passaram (o clDice de "tudo é fissura" também é 0, porque o esqueleto da imagem inteira não toca a barra fina); desfeito pelo Git; CI verde |
 | `8b91cd7` | NOTES: definição do F1 com tolerância (A64), antes do código | 2 linhas inseridas, como previsto; CI verde |
 | `f60534b` | F1 com tolerância k pela transformada de distância euclidiana (`domain/tolerancia.py`), com a máscara vazia tratada antes do scipy, que, sem nenhum pixel de fissura, mede a distância até um ponto fora da imagem (A64) | 946 passed; com a distância trocada pela xadrez, falharam 3 testes (discos de 9, 25 e 49 pixels no lugar de 5, 13 e 29) e 18 passaram; desfeito pelo Git; CI verde |
+| `66c7338` | Pré-registro do desenho do Frangi e da limpeza de componentes (A65): β, fração e percentil do c e conectividade em `config/regras.py`, com 8 travas | 954 passed; com o percentil do c trocado por 95, falhou 1 teste e 98 passaram; desfeito pelo Git; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
