@@ -323,3 +323,30 @@ def test_regras_de_metricas_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_frangi_com_beta_de_meio_e_c_pela_metade_do_percentil_99() -> None:
+    assert REGRAS.beta_frangi == 0.5
+    assert (REGRAS.fracao_c_frangi, REGRAS.percentil_c_frangi) == (0.5, 99.0)
+
+
+def test_limpeza_de_componentes_com_vizinhanca_de_8() -> None:
+    assert REGRAS.conectividade_componentes == 8
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("beta_frangi", 0.0, "β"),
+        ("fracao_c_frangi", 0.0, "fração"),
+        ("fracao_c_frangi", 1.5, "fração"),
+        ("percentil_c_frangi", 0.0, "percentil"),
+        ("percentil_c_frangi", 101.0, "percentil"),
+        ("conectividade_componentes", 6, "conectividade"),
+    ],
+)
+def test_regras_do_frangi_invalidas_sao_recusadas(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})

@@ -104,6 +104,14 @@ class RegrasPreRegistradas:
         unidades_bootstrap: Unidade sorteada no bootstrap, por fonte: no CCSD,
             o grupo de quase-duplicatas (A49), para as fotos de um grupo
             entrarem juntas; no S2DS, a imagem (A61).
+        beta_frangi: Parâmetro β do Frangi, que pune formas arredondadas
+            (o valor do artigo original, A65).
+        fracao_c_frangi: Fração do percentil de S que dá a constante c do
+            Frangi: "metade", como no artigo original (A65).
+        percentil_c_frangi: Percentil de S, normalizado por σ² e medido uma
+            vez nas imagens de treino, que dá a constante c (A65).
+        conectividade_componentes: Vizinhança da limpeza de componentes
+            pequenos: 8, para não quebrar fissuras diagonais (A65).
     """
 
     proporcao_treino: float = 0.70
@@ -169,6 +177,10 @@ class RegrasPreRegistradas:
         ("ccsd", "grupo"),
         ("s2ds", "imagem"),
     )
+    beta_frangi: float = 0.5
+    fracao_c_frangi: float = 0.5
+    percentil_c_frangi: float = 99.0
+    conectividade_componentes: int = 8
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -319,6 +331,18 @@ class RegrasPreRegistradas:
                 "As unidades do bootstrap devem ter fontes distintas e ser "
                 "grupo ou imagem."
             )
+        self._validar_frangi()
+
+    def _validar_frangi(self) -> None:
+        """Recusa regras do Frangi e da limpeza fora dos valores válidos."""
+        if self.beta_frangi <= 0:
+            raise ValueError("O β do Frangi deve ser positivo.")
+        if not 0 < self.fracao_c_frangi <= 1:
+            raise ValueError("A fração do c do Frangi deve estar em (0, 1].")
+        if not 0 < self.percentil_c_frangi <= 100:
+            raise ValueError("O percentil do c do Frangi deve estar em (0, 100].")
+        if self.conectividade_componentes not in {4, 8}:
+            raise ValueError("A conectividade dos componentes deve ser 4 ou 8.")
 
 
 REGRAS = RegrasPreRegistradas()
