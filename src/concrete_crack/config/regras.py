@@ -112,6 +112,19 @@ class RegrasPreRegistradas:
             vez nas imagens de treino, que dá a constante c (A65).
         conectividade_componentes: Vizinhança da limpeza de componentes
             pequenos: 8, para não quebrar fissuras diagonais (A65).
+        escalas_frangi: Oitavas σ, em pixels, cujos mapas o ajuste calcula
+            uma vez por foto e por fundo (A66).
+        faixas_escalas_frangi: Faixas de escalas da grade; o mapa de uma faixa
+            é o máximo dos mapas das suas escalas.
+        sigmas_fundo_frangi: σ do borrão do fundo na grade; 0 desliga a
+            correção, e os outros valores têm pelo menos 4 vezes a maior
+            escala, para o borrão não apagar a fissura larga.
+        limiares_frangi: Limiares da grade, aplicados ao mapa em [0, 1].
+        tamanhos_minimos_frangi: Tamanhos mínimos de componente da grade, em
+            pixels; 0 desliga a limpeza.
+        n_fotos_c_frangi: Fotos do treino sorteadas para calcular o c.
+        n_pixels_c_frangi: Pixels sorteados por foto para o percentil do c.
+        seed_c_frangi: Semente do sorteio das fotos e dos pixels do c.
     """
 
     proporcao_treino: float = 0.70
@@ -181,6 +194,30 @@ class RegrasPreRegistradas:
     fracao_c_frangi: float = 0.5
     percentil_c_frangi: float = 99.0
     conectividade_componentes: int = 8
+    escalas_frangi: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0, 16.0)
+    faixas_escalas_frangi: tuple[tuple[float, ...], ...] = (
+        (1.0, 2.0, 4.0),
+        (1.0, 2.0, 4.0, 8.0),
+        (2.0, 4.0, 8.0, 16.0),
+        (1.0, 2.0, 4.0, 8.0, 16.0),
+    )
+    sigmas_fundo_frangi: tuple[float, ...] = (0.0, 64.0)
+    limiares_frangi: tuple[float, ...] = (
+        0.05,
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85,
+        0.95,
+    )
+    tamanhos_minimos_frangi: tuple[int, ...] = (0, 100, 1000)
+    n_fotos_c_frangi: int = 40
+    n_pixels_c_frangi: int = 100_000
+    seed_c_frangi: int = 20261120
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -343,6 +380,43 @@ class RegrasPreRegistradas:
             raise ValueError("O percentil do c do Frangi deve estar em (0, 100].")
         if self.conectividade_componentes not in {4, 8}:
             raise ValueError("A conectividade dos componentes deve ser 4 ou 8.")
+        self._validar_grade_frangi()
+
+    def _validar_grade_frangi(self) -> None:
+        """Recusa uma grade do Frangi mal formada."""
+
+        def crescente(valores: tuple[float, ...]) -> bool:
+            """Diz se os valores são não vazios, crescentes e sem repetição."""
+            return bool(valores) and list(valores) == sorted(set(valores))
+
+        escalas = self.escalas_frangi
+        if not crescente(escalas) or escalas[0] <= 0:
+            raise ValueError("As escalas devem ser positivas e crescentes.")
+        faixas = self.faixas_escalas_frangi
+        if (
+            not faixas
+            or len(set(faixas)) != len(faixas)
+            or any(not crescente(f) or not set(f) <= set(escalas) for f in faixas)
+        ):
+            raise ValueError(
+                "As faixas devem ser distintas, crescentes e feitas das escalas."
+            )
+        fundos = self.sigmas_fundo_frangi
+        if not crescente(fundos) or any(
+            0 < f < 4 * escalas[-1] or f < 0 for f in fundos
+        ):
+            raise ValueError(
+                "Os σ do fundo devem ser crescentes e 0 ou pelo menos 4 vezes "
+                "a maior escala."
+            )
+        limiares = self.limiares_frangi
+        if not crescente(limiares) or limiares[0] <= 0 or limiares[-1] >= 1:
+            raise ValueError("Os limiares devem ser crescentes e estar em (0, 1).")
+        tamanhos = self.tamanhos_minimos_frangi
+        if not crescente(tamanhos) or tamanhos[0] < 0:
+            raise ValueError("Os tamanhos mínimos devem ser crescentes e >= 0.")
+        if self.n_fotos_c_frangi < 1 or self.n_pixels_c_frangi < 1:
+            raise ValueError("A amostra do c precisa de fotos e pixels.")
 
 
 REGRAS = RegrasPreRegistradas()

@@ -350,3 +350,67 @@ def test_regras_do_frangi_invalidas_sao_recusadas(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_grade_do_frangi_com_oitavas_e_quatro_faixas() -> None:
+    assert REGRAS.escalas_frangi == (1.0, 2.0, 4.0, 8.0, 16.0)
+    assert REGRAS.faixas_escalas_frangi == (
+        (1.0, 2.0, 4.0),
+        (1.0, 2.0, 4.0, 8.0),
+        (2.0, 4.0, 8.0, 16.0),
+        (1.0, 2.0, 4.0, 8.0, 16.0),
+    )
+
+
+def test_grade_do_frangi_com_fundo_limiares_e_tamanhos() -> None:
+    assert REGRAS.sigmas_fundo_frangi == (0.0, 64.0)
+    assert REGRAS.limiares_frangi == (
+        0.05,
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85,
+        0.95,
+    )
+    assert REGRAS.tamanhos_minimos_frangi == (0, 100, 1000)
+
+
+def test_grade_do_frangi_tem_240_configuracoes() -> None:
+    tamanho = (
+        len(REGRAS.faixas_escalas_frangi)
+        * len(REGRAS.sigmas_fundo_frangi)
+        * len(REGRAS.limiares_frangi)
+        * len(REGRAS.tamanhos_minimos_frangi)
+    )
+    assert tamanho == 240
+
+
+def test_c_do_frangi_com_40_fotos_e_100_mil_pixels_e_seed_propria() -> None:
+    assert (REGRAS.n_fotos_c_frangi, REGRAS.n_pixels_c_frangi) == (40, 100_000)
+    assert REGRAS.seed_c_frangi == 20261120
+    outras = {REGRAS.seed_split, REGRAS.seed_bootstrap, REGRAS.seed_controle_duplicatas}
+    assert REGRAS.seed_c_frangi not in outras
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "trecho"),
+    [
+        ("escalas_frangi", (2.0, 1.0), "escalas"),
+        ("faixas_escalas_frangi", ((1.0, 3.0),), "faixas"),
+        ("faixas_escalas_frangi", ((1.0, 2.0), (1.0, 2.0)), "faixas"),
+        ("sigmas_fundo_frangi", (0.0, 32.0), "fundo"),
+        ("limiares_frangi", (0.5, 0.05), "limiares"),
+        ("limiares_frangi", (0.0, 0.5), "limiares"),
+        ("tamanhos_minimos_frangi", (100, 0), "tamanhos"),
+        ("n_pixels_c_frangi", 0, "amostra"),
+    ],
+)
+def test_grade_do_frangi_invalida_e_recusada(
+    campo: str, valor: object, trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **{campo: valor})
