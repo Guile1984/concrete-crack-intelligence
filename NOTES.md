@@ -194,6 +194,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `51d5e7d` | Agregação por imagem e global no recorte da A63 (`domain/agregacao.py`), com as contagens de esqueleto somáveis (`ContagensEsqueleto`, `cldice_de_contagens`) (A62) | 903 passed; sem o recorte da A63, falharam 2 testes e 6 passaram; desfeito pelo Git; CI verde |
 | `0b701ce` | Bootstrap pareado por grupos e regra do critério 1 (`domain/bootstrap.py`): média por imagem das diferenças, grupos sorteados inteiros, quantil linear do numpy (a A62 não fixava a interpolação; com B = 10.000 a escolha fica entre dois vizinhos ordenados), desigualdade estrita no zero (A62, itens 6 e 7) | 919 passed; sorteando imagens soltas, falharam 2 testes (razão de larguras 1,0; grupo único de 0,1 a 0,5) e 14 passaram; desfeito pelo Git; CI verde |
 | `1436c0a` | Avaliação de uma imagem (`avaliar_imagem`), preditor trivial "tudo é fundo" e acurácia global como linha de base (`domain/avaliacao.py`) (A62, item 8) | 925 passed; com o trivial prevendo tudo como fissura, falharam 2 testes e 4 passaram (o clDice de "tudo é fissura" também é 0, porque o esqueleto da imagem inteira não toca a barra fina); desfeito pelo Git; CI verde |
+| `8b91cd7` | NOTES: definição do F1 com tolerância (A64), antes do código | 2 linhas inseridas, como previsto; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
