@@ -189,3 +189,16 @@ def caminho_constante_c(raiz: Path) -> Path:
         O caminho de ``experiments/frangi_c_v1.json``.
     """
     return raiz / "experiments" / "frangi_c_v1.json"
+
+
+def pasta_mapas_frangi(raiz: Path, fonte_id: str) -> Path:
+    """Devolve a pasta do cache dos mapas do Frangi por escala (fora do Git).
+
+    Args:
+        raiz: Raiz do projeto.
+        fonte_id: Identificador da fonte.
+
+    Returns:
+        O caminho de ``data/interim/mapas_frangi_<fonte_id>``.
+    """
+    return raiz / "data" / "interim" / f"mapas_frangi_{fonte_id}"
