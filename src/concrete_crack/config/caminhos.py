@@ -177,3 +177,15 @@ def pasta_tiles(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``data/interim/tiles_<fonte_id>``.
     """
     return raiz / "data" / "interim" / f"tiles_{fonte_id}"
+
+
+def caminho_constante_c(raiz: Path) -> Path:
+    """Devolve o caminho do registro da constante c do Frangi (versão 1).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``experiments/frangi_c_v1.json``.
+    """
+    return raiz / "experiments" / "frangi_c_v1.json"

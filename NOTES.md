@@ -202,6 +202,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `823004c` | Port `Segmentador` (`ports/segmentador.py`) e pós-processamento comum (`domain/posprocessamento.py`: `conferir_mapa`, `binarizar`, `remover_componentes_pequenos`) (A65, itens 1 e 2) | 972 passed; com a limpeza forçada para a vizinhança de 4, falhou 1 teste (a diagonal de 5 pixels sumiu) e 15 passaram; desfeito pelo Git; CI verde |
 | `5677efb` | Adaptador Frangi (`infrastructure/frangi.py`): cinza, subtração do fundo, Frangi uma escala por vez com γ = c/σ² e máximo entre as escalas (A65, itens 3 a 5) | 987 passed; sem a normalização por σ², falharam 2 testes (fissura fina 0,6148 e larga 0,0199, os valores da simulação) e 13 passaram; desfeito pelo Git; CI verde |
 | `b424785` | Pré-registro da grade de ajuste do Frangi e da amostra do c (A66): 9 regras em `config/regras.py`, com 12 testes | 999 passed; com o maior tamanho mínimo trocado por 500, falhou 1 teste (o dos valores; o de K = 240 continuou passando) e 110 passaram; desfeito pelo Git; CI verde |
+| `9220320` | Amostra e cálculo da constante c (`domain/constante_c.py`) e a estrutura S* com a mesma Hessiana do filtro (`estrutura_normalizada`) (A66, item 3) | 1018 passed; com S* sem o σ², falharam 2 testes (Frangi 0,9785 contra 0,2133; fina 0,0388 contra larga 0,0039) e 1 passou; desfeito pelo Git; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
