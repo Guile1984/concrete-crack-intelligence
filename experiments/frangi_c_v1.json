@@ -1,0 +1,74 @@
+{
+  "fonte_id": "ccsd",
+  "sha256_split": "bd93defe4a450c0955f69c642deea6f8aec12d1456ad0532e4dac27e1b775087",
+  "seed": 20261120,
+  "n_pixels_por_foto": 100000,
+  "escalas": [
+    1.0,
+    2.0,
+    4.0,
+    8.0,
+    16.0
+  ],
+  "percentil": 99.0,
+  "fracao": 0.5,
+  "constantes": [
+    {
+      "sigma_fundo": 0.0,
+      "percentil_s": 0.09903860228926699,
+      "c": 0.049519301144633494
+    },
+    {
+      "sigma_fundo": 64.0,
+      "percentil_s": 0.09894413265943922,
+      "c": 0.04947206632971961
+    }
+  ],
+  "versoes": {
+    "numpy": "2.5.4",
+    "scikit-image": "0.26.0",
+    "scipy": "1.18.1"
+  },
+  "fotos": [
+    "rgb/017.jpg",
+    "rgb/042.jpg",
+    "rgb/053.jpg",
+    "rgb/081.jpg",
+    "rgb/082.jpg",
+    "rgb/087.jpg",
+    "rgb/106.jpg",
+    "rgb/108.jpg",
+    "rgb/122.jpg",
+    "rgb/189.jpg",
+    "rgb/211.jpg",
+    "rgb/223.jpg",
+    "rgb/225.jpg",
+    "rgb/229.jpg",
+    "rgb/236.jpg",
+    "rgb/238.jpg",
+    "rgb/246.jpg",
+    "rgb/247.jpg",
+    "rgb/269.jpg",
+    "rgb/291.jpg",
+    "rgb/380.JPG",
+    "rgb/419.JPG",
+    "rgb/421.JPG",
+    "rgb/424.JPG",
+    "rgb/436.JPG",
+    "rgb/448.JPG",
+    "rgb/455.JPG",
+    "rgb/458.JPG",
+    "rgb/460.JPG",
+    "rgb/470.JPG",
+    "rgb/500.JPG",
+    "rgb/512.JPG",
+    "rgb/532.JPG",
+    "rgb/534.JPG",
+    "rgb/556.JPG",
+    "rgb/567.JPG",
+    "rgb/571.JPG",
+    "rgb/580.JPG",
+    "rgb/589.JPG",
+    "rgb/600.JPG"
+  ]
+}

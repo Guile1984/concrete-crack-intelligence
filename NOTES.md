@@ -203,6 +203,7 @@ As 11 alterações ao prompt original estão em `DISCOVERY.md`, seção 0.
 | `5677efb` | Adaptador Frangi (`infrastructure/frangi.py`): cinza, subtração do fundo, Frangi uma escala por vez com γ = c/σ² e máximo entre as escalas (A65, itens 3 a 5) | 987 passed; sem a normalização por σ², falharam 2 testes (fissura fina 0,6148 e larga 0,0199, os valores da simulação) e 13 passaram; desfeito pelo Git; CI verde |
 | `b424785` | Pré-registro da grade de ajuste do Frangi e da amostra do c (A66): 9 regras em `config/regras.py`, com 12 testes | 999 passed; com o maior tamanho mínimo trocado por 500, falhou 1 teste (o dos valores; o de K = 240 continuou passando) e 110 passaram; desfeito pelo Git; CI verde |
 | `9220320` | Amostra e cálculo da constante c (`domain/constante_c.py`) e a estrutura S* com a mesma Hessiana do filtro (`estrutura_normalizada`) (A66, item 3) | 1018 passed; com S* sem o σ², falharam 2 testes (Frangi 0,9785 contra 0,2133; fina 0,0388 contra larga 0,0039) e 1 passou; desfeito pelo Git; CI verde |
+| `0f51bc4` | Comando e registro da constante c do Frangi (`presentation/constante_frangi.py`, `domain/registro_c.py`, `infrastructure/registro_c_json.py`), que se recusa a recalcular um c já registrado (A66, item 3) | 1032 passed; com todas as fotos usando o sorteio de pixels da primeira, falhou 1 teste e 3 passaram; desfeito pelo Git; CI verde |
 
 ## 3. Falha provocada do CI (resultado deliberado, mantido)
 
