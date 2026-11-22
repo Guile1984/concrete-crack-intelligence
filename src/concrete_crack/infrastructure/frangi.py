@@ -3,13 +3,15 @@
 Tons de cinza, subtração do fundo, Frangi multiescala com a constante c
 absoluta (nunca calculada por imagem) e normalização por σ², feita chamando o
 filtro uma escala por vez com γ = c / σ². O máximo entre as escalas já fica em
-[0, 1] pela própria fórmula do filtro.
+[0, 1] pela própria fórmula do filtro. A estrutura S*, de onde sai o c (A66,
+item 3), é calculada com a mesma Hessiana que o filtro usa.
 """
 
 from dataclasses import dataclass
 
 import numpy as np
 from skimage.color import rgb2gray
+from skimage.feature import hessian_matrix, hessian_matrix_eigvals
 from skimage.filters import frangi, gaussian
 
 
@@ -99,3 +101,31 @@ class SegmentadorFrangi:
             )
             mapa = np.maximum(mapa, resposta)
         return mapa
+
+
+def estrutura_normalizada(
+    corrigida: np.ndarray, sigmas: tuple[float, ...]
+) -> np.ndarray:
+    """Calcula S*, o máximo entre as escalas de σ² vezes a estrutura S.
+
+    S = √(λ1² + λ2²), com os autovalores da mesma Hessiana que o ``frangi`` do
+    scikit-image calcula (derivadas gaussianas, modo ``reflect``). É a medida
+    cujo percentil no treino dá o c (A66, item 3).
+
+    Args:
+        corrigida: Imagem em cinza com o fundo já subtraído.
+        sigmas: As escalas, em pixels.
+
+    Returns:
+        S* em cada pixel, ``float64``, do formato da imagem.
+    """
+    resultado = np.zeros(corrigida.shape)
+    for sigma in sigmas:
+        autovalores = hessian_matrix_eigvals(
+            hessian_matrix(
+                corrigida, sigma, mode="reflect", use_gaussian_derivatives=True
+            )
+        )
+        estrutura = np.sqrt((autovalores**2).sum(axis=0))
+        resultado = np.maximum(resultado, sigma**2 * estrutura)
+    return resultado
