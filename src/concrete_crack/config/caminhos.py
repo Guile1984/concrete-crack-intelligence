@@ -202,3 +202,27 @@ def pasta_mapas_frangi(raiz: Path, fonte_id: str) -> Path:
         O caminho de ``data/interim/mapas_frangi_<fonte_id>``.
     """
     return raiz / "data" / "interim" / f"mapas_frangi_{fonte_id}"
+
+
+def caminho_ajuste_frangi(raiz: Path) -> Path:
+    """Devolve o caminho do resumo do ajuste do Frangi na validação (versão 1).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``experiments/frangi_ajuste_v1.json``.
+    """
+    return raiz / "experiments" / "frangi_ajuste_v1.json"
+
+
+def caminho_grade_frangi(raiz: Path) -> Path:
+    """Devolve o caminho dos resultados das 240 configurações (versão 1).
+
+    Args:
+        raiz: Raiz do projeto.
+
+    Returns:
+        O caminho de ``experiments/frangi_grade_v1.jsonl``.
+    """
+    return raiz / "experiments" / "frangi_grade_v1.jsonl"
