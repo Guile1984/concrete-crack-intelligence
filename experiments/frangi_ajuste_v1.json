@@ -1,0 +1,166 @@
+{
+  "fonte_id": "ccsd",
+  "sha256_split": "bd93defe4a450c0955f69c642deea6f8aec12d1456ad0532e4dac27e1b775087",
+  "sha256_grupos": "bd046b980247f8e5a61dab993ca992a00e20a9e8241f8c586fa3ff85b60d8dfc",
+  "sha256_registro_c": "6e4d6052add067ce804064c5d91afa80fa9f0be7bd700c1955b57bf3bb9499d7",
+  "versoes": {
+    "numpy": "2.5.4",
+    "scikit-image": "0.26.0",
+    "scipy": "1.18.1"
+  },
+  "fotos": [
+    "rgb/001.jpg",
+    "rgb/019.jpg",
+    "rgb/023.jpg",
+    "rgb/046.jpg",
+    "rgb/054.jpg",
+    "rgb/056.jpg",
+    "rgb/070.jpg",
+    "rgb/098.jpg",
+    "rgb/104.jpg",
+    "rgb/114.jpg",
+    "rgb/124.jpg",
+    "rgb/132.jpg",
+    "rgb/134.jpg",
+    "rgb/143.jpg",
+    "rgb/146.jpg",
+    "rgb/148.jpg",
+    "rgb/168.jpg",
+    "rgb/170.jpg",
+    "rgb/185.jpg",
+    "rgb/191.jpg",
+    "rgb/207.jpg",
+    "rgb/213.jpg",
+    "rgb/216.jpg",
+    "rgb/217.jpg",
+    "rgb/232.jpg",
+    "rgb/243.jpg",
+    "rgb/244.jpg",
+    "rgb/256.jpg",
+    "rgb/257.jpg",
+    "rgb/259.jpg",
+    "rgb/274.jpg",
+    "rgb/276.jpg",
+    "rgb/282.jpg",
+    "rgb/295.jpg",
+    "rgb/323.jpg",
+    "rgb/358.JPG",
+    "rgb/361.JPG",
+    "rgb/364.JPG",
+    "rgb/366.JPG",
+    "rgb/369.JPG",
+    "rgb/372.JPG",
+    "rgb/374.JPG",
+    "rgb/379.JPG",
+    "rgb/416.JPG",
+    "rgb/431.JPG",
+    "rgb/439.JPG",
+    "rgb/446.JPG",
+    "rgb/459.JPG",
+    "rgb/476.JPG",
+    "rgb/478.JPG",
+    "rgb/479.JPG",
+    "rgb/493.JPG",
+    "rgb/513.JPG",
+    "rgb/515.JPG",
+    "rgb/522.JPG",
+    "rgb/526.JPG",
+    "rgb/527.JPG",
+    "rgb/529.JPG",
+    "rgb/536.JPG",
+    "rgb/542.JPG",
+    "rgb/543.JPG",
+    "rgb/546.JPG",
+    "rgb/554.JPG",
+    "rgb/563.JPG",
+    "rgb/577.JPG",
+    "rgb/579.JPG",
+    "rgb/586.JPG",
+    "rgb/593.JPG",
+    "rgb/608.JPG"
+  ],
+  "metrica_de_escolha": "media por imagem do clDice, recorte da A63",
+  "escolhida": {
+    "indice": 194,
+    "configuracao": {
+      "faixa": [
+        1.0,
+        2.0,
+        4.0,
+        8.0,
+        16.0
+      ],
+      "sigma_fundo": 0.0,
+      "limiar": 0.45,
+      "tamanho_minimo": 1000
+    },
+    "resumo": {
+      "n_imagens": 69,
+      "n_com_fissura": 69,
+      "precisao": {
+        "valor": 0.9124482422572365,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "recall": {
+        "valor": 0.6859319958024033,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "dice": {
+        "valor": 0.7752352297529758,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "cldice": {
+        "valor": 0.8457821134596676,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "precisao_global": 0.9124221254887177,
+      "recall_global": 0.6651805607024965,
+      "dice_global": 0.7694275197961804,
+      "cldice_global": 0.8412662824595443
+    },
+    "intervalo": {
+      "estimativa": 0.8457821134596675,
+      "inferior": 0.8265360255981004,
+      "superior": 0.8629678926812218,
+      "nivel": 0.95,
+      "n_reamostragens": 10000,
+      "seed": 20261117,
+      "otimista": "maldicao do vencedor: escolhida entre 240"
+    }
+  },
+  "trivial": {
+    "resumo": {
+      "n_imagens": 69,
+      "n_com_fissura": 69,
+      "precisao": {
+        "valor": null,
+        "n_definidas": 0,
+        "n_indefinidas": 69
+      },
+      "recall": {
+        "valor": 0.0,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "dice": {
+        "valor": 0.0,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "cldice": {
+        "valor": 0.0,
+        "n_definidas": 69,
+        "n_indefinidas": 0
+      },
+      "precisao_global": null,
+      "recall_global": 0.0,
+      "dice_global": 0.0,
+      "cldice_global": 0.0
+    },
+    "acuracia_global": 0.9865483918048988
+  }
+}
