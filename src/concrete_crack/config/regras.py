@@ -125,6 +125,23 @@ class RegrasPreRegistradas:
         n_fotos_c_frangi: Fotos do treino sorteadas para calcular o c.
         n_pixels_c_frangi: Pixels sorteados por foto para o percentil do c.
         seed_c_frangi: Semente do sorteio das fotos e dos pixels do c.
+        encoder_unet: Encoder da U-Net, do torchvision, sem a cabeça de
+            classificação (A4, A68).
+        pesos_encoder_unet: Pesos pré-treinados do encoder; o arquivo é baixado
+            uma vez e conferido por hash, nunca em silêncio no treino (A68).
+        canais_decoder_unet: Canais de saída de cada bloco do decoder, de
+            baixo para cima; cada bloco desfaz uma redução do encoder (A68).
+        modo_subida_unet: Como o decoder sobe a resolução, antes da
+            convolução: vizinho mais próximo, sem os artefatos em tabuleiro
+            da convolução transposta e sem a recusa do modo bilinear no
+            modo determinístico em CUDA (A68).
+        media_normalizacao: Média por canal (RGB em [0, 1]) subtraída da
+            entrada dentro do modelo; a do ImageNet, porque os pesos vêm dele.
+        desvio_normalizacao: Desvio por canal que divide a entrada dentro do
+            modelo; o do ImageNet.
+        fator_reducao_unet: Redução total da entrada até o fundo do encoder
+            (2 elevado ao número de reduções); o lado da entrada precisa ser
+            múltiplo dele para os atalhos casarem com a subida (A68).
     """
 
     proporcao_treino: float = 0.70
@@ -218,6 +235,13 @@ class RegrasPreRegistradas:
     n_fotos_c_frangi: int = 40
     n_pixels_c_frangi: int = 100_000
     seed_c_frangi: int = 20261120
+    encoder_unet: str = "resnet18"
+    pesos_encoder_unet: str = "IMAGENET1K_V1"
+    canais_decoder_unet: tuple[int, ...] = (256, 128, 64, 32, 16)
+    modo_subida_unet: str = "nearest"
+    media_normalizacao: tuple[float, float, float] = (0.485, 0.456, 0.406)
+    desvio_normalizacao: tuple[float, float, float] = (0.229, 0.224, 0.225)
+    fator_reducao_unet: int = 32
 
     def __post_init__(self) -> None:
         """Recusa um split que não soma 1 e regras incoerentes entre si."""
@@ -417,6 +441,43 @@ class RegrasPreRegistradas:
             raise ValueError("Os tamanhos mínimos devem ser crescentes e >= 0.")
         if self.n_fotos_c_frangi < 1 or self.n_pixels_c_frangi < 1:
             raise ValueError("A amostra do c precisa de fotos e pixels.")
+        self._validar_unet()
+
+    def _validar_unet(self) -> None:
+        """Recusa uma arquitetura da U-Net incoerente com o encoder e os tiles."""
+        if self.encoder_unet != "resnet18":
+            raise ValueError("O encoder da U-Net deve ser a resnet18 (A4).")
+        if self.pesos_encoder_unet != "IMAGENET1K_V1":
+            raise ValueError("Os pesos do encoder devem ser os IMAGENET1K_V1.")
+        canais = self.canais_decoder_unet
+        if (
+            not canais
+            or canais[-1] < 1
+            or list(canais) != sorted(set(canais), reverse=True)
+        ):
+            raise ValueError("Os canais do decoder devem ser positivos e decrescentes.")
+        if self.fator_reducao_unet != 2 ** len(canais):
+            raise ValueError(
+                "O fator de redução deve ser 2 elevado ao número de blocos do "
+                "decoder: cada bloco desfaz uma redução."
+            )
+        for lado in (self.lado_tile_nativo, self.lado_tile_reduzido):
+            if lado % self.fator_reducao_unet != 0:
+                raise ValueError(
+                    "Os lados dos tiles devem ser múltiplos do fator de redução."
+                )
+        if self.modo_subida_unet not in {"nearest"}:
+            raise ValueError("O modo de subida do decoder deve ser nearest.")
+        media, desvio = self.media_normalizacao, self.desvio_normalizacao
+        if (
+            len(media) != 3
+            or len(desvio) != 3
+            or any(not 0 <= m <= 1 for m in media)
+            or any(d <= 0 for d in desvio)
+        ):
+            raise ValueError(
+                "A normalização precisa de 3 médias em [0, 1] e 3 desvios positivos."
+            )
 
 
 REGRAS = RegrasPreRegistradas()

@@ -414,3 +414,51 @@ def test_grade_do_frangi_invalida_e_recusada(
 ) -> None:
     with pytest.raises(ValueError, match=trecho):
         replace(REGRAS, **{campo: valor})
+
+
+def test_unet_com_encoder_resnet18_e_pesos_do_imagenet() -> None:
+    assert REGRAS.encoder_unet == "resnet18"
+    assert REGRAS.pesos_encoder_unet == "IMAGENET1K_V1"
+
+
+def test_decoder_com_cinco_blocos_e_subida_por_vizinho_mais_proximo() -> None:
+    assert REGRAS.canais_decoder_unet == (256, 128, 64, 32, 16)
+    assert REGRAS.modo_subida_unet == "nearest"
+
+
+def test_normalizacao_do_imagenet() -> None:
+    assert REGRAS.media_normalizacao == (0.485, 0.456, 0.406)
+    assert REGRAS.desvio_normalizacao == (0.229, 0.224, 0.225)
+
+
+def test_fator_de_reducao_casa_com_o_decoder_e_com_os_tiles() -> None:
+    assert REGRAS.fator_reducao_unet == 32 == 2 ** len(REGRAS.canais_decoder_unet)
+    assert REGRAS.lado_tile_nativo // REGRAS.fator_reducao_unet == 16
+    assert REGRAS.lado_tile_reduzido // REGRAS.fator_reducao_unet == 8
+
+
+@pytest.mark.parametrize(
+    ("mudancas", "trecho"),
+    [
+        ({"encoder_unet": "resnet34"}, "encoder"),
+        ({"pesos_encoder_unet": "IMAGENET1K_V2"}, "pesos"),
+        ({"canais_decoder_unet": (16, 32, 64, 128, 256)}, "canais"),
+        ({"canais_decoder_unet": (256, 128, 64, 32, 0)}, "canais"),
+        ({"canais_decoder_unet": (256, 128, 64, 32)}, "fator"),
+        (
+            {
+                "canais_decoder_unet": (4096, 2048, 1024, 512, 256, 128, 64, 32, 16),
+                "fator_reducao_unet": 512,
+            },
+            "múltiplos",
+        ),
+        ({"modo_subida_unet": "bilinear"}, "subida"),
+        ({"media_normalizacao": (0.485, 0.456)}, "normalização"),
+        ({"desvio_normalizacao": (0.229, 0.0, 0.225)}, "normalização"),
+    ],
+)
+def test_arquitetura_da_unet_invalida_e_recusada(
+    mudancas: dict[str, object], trecho: str
+) -> None:
+    with pytest.raises(ValueError, match=trecho):
+        replace(REGRAS, **mudancas)
